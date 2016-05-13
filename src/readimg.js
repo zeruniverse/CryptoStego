@@ -74,3 +74,26 @@ function extractMsgArray_nopass(bitarray)
     }
     return msgarray;
 }
+function extractBitArrayFFT(fftdata,copy,lim)
+{
+    function cbit(a,lim){
+        return (Math.round(a/lim)%2==1)?true:false;
+    }
+    function comb(a){
+        var len=a.length;
+        var count=0
+        for(var i=0;i<len;i++) if(a[i]) count++;
+        if(count>=(len/2)) return true; else return false;
+    }
+    var result=Array();
+    var fftdatalength=fftdata.length;
+    var resultlength=Math.floor(fftdatalength/copy);
+    for(var i=0;i<resultlength;i++){
+        var tmp=Array();
+        for(var j=0;j<copy;j++){
+            tmp.push(cbit(fftdata[i*copy+j][0],lim));
+        }
+        result.push(comb(tmp));
+    }
+    return result;
+}

@@ -1,23 +1,27 @@
 //Write msg to the image in canvasid.
 //Return: null - fail. 1 - successful
-function writeMsgToCanvas(canvasid,msg,pass=''){
+function writeMsgToCanvas(canvasid,msg,pass='',fft=false,copy=3,blocksizepow=2,lim=100){
     var c=document.getElementById(canvasid);
     var ctx=c.getContext("2d");
     var imgData=ctx.getImageData(0,0,c.width,c.height);
-    var setarray = (pass=='')?generate_nopass(Math.floor(imgData.data.length/4)*3,msg):generate_pass(Math.floor(imgData.data.length/4)*3,msg,pass);
+    var fftdata=(fft)?fftconvert(imgData.data,c.width,c.height,blocksizepow):null;
+    var blocksize= 1 << blocksizepow;
+    var datalength=(fft)?Math.floor(fftdata.length/copy):Math.floor(imgData.data.length/4)*3;
+    var setarray = (pass=='')?generate_nopass(datalength,msg):generate_pass(datalength,msg,pass);
     if(setarray==null) return null;
-    setimgdata(imgData,setarray);
+    (fft)?fftset(imgData.data,fftdata,c.width,c.height,setarray,copy,blocksizepow,lim):setimgdata(imgData,setarray);
     ctx.putImageData(imgData,0,0);
     return 1;
 }
 
 //Read msg from the image in canvasid.
 //Return msg (null -> fail)
-function readMsgFromCanvas(canvasid,pass=''){
+function readMsgFromCanvas(canvasid,pass='',fft=false,copy=3,blocksizepow=2,lim=100){
     var c=document.getElementById(canvasid);
     var ctx=c.getContext("2d");
     var imgData=ctx.getImageData(0,0,c.width,c.height);
-    var bitarray = extractBitArray(imgData);
+    var fftdata=(fft)?fftconvert(imgData.data,c.width,c.height,blocksizepow):null;
+    var bitarray = (fft)?extractBitArrayFFT(fftdata,copy,lim):extractBitArray(imgData);
     if (bitarray[1]) return null;
     var msgArray=(bitarray[0])?extractMsgArray_pass(bitarray,pass):extractMsgArray_nopass(bitarray);
     if(msgArray==null) return null;
