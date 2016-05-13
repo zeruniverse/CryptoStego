@@ -33,12 +33,10 @@ function loadIMGtoCanvas(inputid, canvasid, callback, maxsize=0) {
         reader.onload = function(e) {
             var data = e.target.result;
             var image = new Image();
-            image.onload = function() {
-                var canvas = document.createElement('canvas');
+            image.onload = function() {                        
+                var w=image.width;
+                var h=image.height;
                 if(maxsize>0){
-                    var w,h;
-                    w=image.width;
-                    h=image.height;
                     if(w>maxsize){
                         h=h*(maxsize/w);
                         w=maxsize;
@@ -47,17 +45,18 @@ function loadIMGtoCanvas(inputid, canvasid, callback, maxsize=0) {
                         w=w*(maxsize/h);
                         h=maxsize;
                     }
-                    image.width=Math.floor(w);
-                    image.height=Math.floor(h);
+                    w=Math.floor(w);
+                    h=Math.floor(h);
                 }
+                var canvas = document.createElement('canvas');
                 canvas.id = canvasid;
-                canvas.width = image.width;
-                canvas.height = image.height;
+                canvas.width = w;
+                canvas.height = h;
                 canvas.style.display = "none";
                 var body = document.getElementsByTagName("body")[0];
                 body.appendChild(canvas);
                 var context = canvas.getContext('2d');
-                context.drawImage(image, 0, 0);
+                context.drawImage(image, 0, 0,image.width,image.height,0,0,w,h);
                 callback();
                 document.body.removeChild(canvas);
             };
