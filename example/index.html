@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>CryptoStego (Minimal) Example</title>
+<meta charset="UTF-8">
+</head>
+<body>
+<div style="margin:30px 30px 30px 30px">
+Select an image: <input type="file" id="file" accept="image/*" /> <br /><br />
+Input Password (Optional): <input type="text" id="pass" value="" /> <br /><br />
+Message:<br /><textarea id="msg" width="100%" placeholder="Your Message Here!"></textarea> <br /><br />
+<button onclick='writeIMG()'>Hide My MSG to Image</button>  <button onclick='readIMG()'>Read My MSG from Image</button><br /><br />
+<hr />
+Results:<br />
+<div id="result" style="width:100%; background-color:#777"></div>
+ 
+</div>
+</body>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.2/jquery.min.js"></script>
+<script src="cryptostego.min.js"></script>
+<script>
+function writeIMG(){
+    function writefunc(){
+        if(writeMsgToCanvas('canvas',$("#msg").val(),$("#pass").val())!=null){ 
+        var myCanvas = document.getElementById("canvas");  
+        var image = myCanvas.toDataURL("image/png").replace("image/png", "image/octet-stream");    
+        var element = document.createElement('a');
+        element.setAttribute('href', image);
+        element.setAttribute('download', 'result.png');
+        element.style.display = 'none';
+        document.body.appendChild(element);
+        element.click();
+        document.body.removeChild(element);        
+    }
+    }
+    loadIMGtoCanvas('file','canvas',writefunc);
+}
+function readIMG(){
+    function readfunc(){
+        var t=readMsgFromCanvas('canvas',$("#pass").val());
+        if(t!=null){
+            $("#result").html(t);
+        }else $("#result").html('error');
+             
+    }
+    loadIMGtoCanvas('file','canvas',readfunc);
+}
+</script>
+</html>
