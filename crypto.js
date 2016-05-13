@@ -15,15 +15,7 @@ function bitconvert(str)
     }
     return result;
 }
-function initialize(length,bit1,bit2){
-    result=Array();
-    result[0]=bit1;
-    result[1]=bit2;
-    for(var i=2; i<length; i++){
-        result.push((Math.floor(Math.random()*2))?true:false); //obfuscation
-    }
-    return result;
-}
+
 function numarray(num){
     var result=Array();
     for(var j=2097152; j>0; j=Math.floor(j/2))
@@ -36,23 +28,11 @@ function numarray(num){
     }
     return result;
 }
-function generate_nopass(imgdatalength,information){
-    var info=bitconvert(information);
-    if(info.length>imgdatalength-24 || info.length > 4194300*8) {alert('TEXT TOO LONG!'); return null;}
-    var result=initialize(imgdatalength,false,false);
-    var infolen=info.length;
-    var lenarray=numarray(Math.floor(infolen/8));
-    for(var i=0;i<22;i++){
-        result[i+2]=lenarray[i];
-    }
-    for(var i=0;i<infolen;i++){
-        result[i+24]=info[i];
-    }
-    return result;
-}
+
 function isInclude(arr,obj) {
     return (arr.indexOf(obj) != -1);
 }
+
 function gethashval(str,modval,taken){
     var result=0;
     var a=0;
@@ -72,24 +52,5 @@ function gethashval(str,modval,taken){
     result = result % modval;
     while(isInclude(taken,result)) result = (result+1)%modval;
     taken.push(result);
-    return result;
-}
-function generate_pass(imgdatalength,information,pass){
-    var info=bitconvert(information);
-    if(info.length>imgdatalength-24 || info.length > 4194300 * 8) {alert('TEXT TOO LONG!'); return null;}
-    var result=initialize(imgdatalength,true,false);
-    var infolen=info.length;
-    var lenarray=numarray(Math.floor(infolen/8));
-    pass=String(CryptoJS.SHA512(pass));
-    taken=Array();
-    modval=imgdatalength-2;
-    for(var i=0;i<22;i++){
-        result[gethashval(pass,modval,taken)+2]=lenarray[i];
-        pass=String(CryptoJS.SHA512(pass));
-    }
-    for(var i=0;i<infolen;i++){
-        result[gethashval(pass,modval,taken)+24]=info[i];
-        pass=String(CryptoJS.SHA512(pass));
-    }
     return result;
 }
