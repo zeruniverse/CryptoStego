@@ -13,7 +13,7 @@ function writeMsgToCanvas(canvasid,msg,pass=''){
 
 //Read msg from the image in canvasid.
 //Return msg (null -> fail)
-function readMsgFromCanvas(canvasid,pass){
+function readMsgFromCanvas(canvasid,pass=''){
     var c=document.getElementById(canvasid);
     var ctx=c.getContext("2d");
     var imgData=ctx.getImageData(0,0,c.width,c.height);
@@ -25,9 +25,9 @@ function readMsgFromCanvas(canvasid,pass){
 }
 
 //load image from html5 input and execute callback() if successful
-function loadIMGtoCanvas(inputid, canvasid, callback) {
+function loadIMGtoCanvas(inputid, canvasid, callback, maxsize=0) {
     var input = document.getElementById(inputid);
-    if (input.files) {
+    if (input.files && input.files[0]) {
         var f = input.files[0];
         var reader = new FileReader();
         reader.onload = function(e) {
@@ -35,6 +35,21 @@ function loadIMGtoCanvas(inputid, canvasid, callback) {
             var image = new Image();
             image.onload = function() {
                 var canvas = document.createElement('canvas');
+                if(maxsize>0){
+                    var w,h;
+                    w=image.width;
+                    h=image.height;
+                    if(w>maxsize){
+                        h=h*(maxsize/w);
+                        w=maxsize;
+                    }
+                    if(h>maxsize){
+                        w=w*(maxsize/h);
+                        h=maxsize;
+                    }
+                    image.width=Math.floor(w);
+                    image.height=Math.floor(h);
+                }
                 canvas.id = canvasid;
                 canvas.width = image.width;
                 canvas.height = image.height;
@@ -51,6 +66,6 @@ function loadIMGtoCanvas(inputid, canvasid, callback) {
         reader.readAsDataURL(f);
     } else {
         alert('NO IMG FILE SELECTED');
-        return;
+        return 'ERROR PROCESSING IMAGE!';
     }
 }
