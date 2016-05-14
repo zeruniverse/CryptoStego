@@ -1,3 +1,2 @@
-A minimal example.  
-jQuery is NOT necessary for the library. Just use it in the example for convenience.  
-See png.html for example using LSB mode, jpg.html for example using fast Fourier mode.  
+`minimum_example` shows an example for forcing download result image as a picture file  
+`canvas_copy_to_imgsrc_example` shows an example for showing the result image in some `<img>` element  

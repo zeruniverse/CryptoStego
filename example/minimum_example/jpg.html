@@ -35,7 +35,7 @@ function writeIMG(){
     function writefunc(){
         if(writeMsgToCanvas('canvas',$("#msg").val(),$("#pass").val(),true)!=null){ 
         var myCanvas = document.getElementById("canvas");  
-        var image = myCanvas.toDataURL("image/jpg");    
+        var image = myCanvas.toDataURL("image/jpeg",1.0);    
         var element = document.createElement('a');
         element.setAttribute('href', image);
         element.setAttribute('download', 'result.jpg');
