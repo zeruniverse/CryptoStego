@@ -213,10 +213,7 @@ function imageFFT(dataArray, width, height, isIfft = false) {
 				dataArray[j * height + i] = dataArray2[i * width + j];
 			}
 		}
-        var result = Array();
-        var resultlen=dataArray.length;
-        for(var i=0; i<resultlen; i++) result.push(dataArray[i].real);
-		return result;
+        return dataArray;
 	}
 
 	function ifft(dataArray) {
@@ -299,10 +296,7 @@ function imageFFT(dataArray, width, height, isIfft = false) {
 			}
 		}
 		dataArray = dataArray2;
-        var result = Array();
-        var resultlen=dataArray.length;
-        for(var i=0; i<resultlen; i++) result.push(dataArray[i].real);
-		return result;
+        return dataArray;
 	}
 	return (isIfft) ? ifft2(dataArray, width, height) : fft2(dataArray, width, height);
 }

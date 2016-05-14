@@ -1,6 +1,6 @@
 //Write msg to the image in canvasid.
 //Return: null - fail. 1 - successful
-function writeMsgToCanvas(canvasid,msg,pass='',fft=false,copy=3,blocksizepow=2,lim=100){
+function writeMsgToCanvas(canvasid,msg,pass='',fft=false,copy=5,blocksizepow=2,lim=80){
     var c=document.getElementById(canvasid);
     var ctx=c.getContext("2d");
     var imgData=ctx.getImageData(0,0,c.width,c.height);
@@ -16,7 +16,7 @@ function writeMsgToCanvas(canvasid,msg,pass='',fft=false,copy=3,blocksizepow=2,l
 
 //Read msg from the image in canvasid.
 //Return msg (null -> fail)
-function readMsgFromCanvas(canvasid,pass='',fft=false,copy=3,blocksizepow=2,lim=100){
+function readMsgFromCanvas(canvasid,pass='',fft=false,copy=5,blocksizepow=2,lim=80){
     var c=document.getElementById(canvasid);
     var ctx=c.getContext("2d");
     var imgData=ctx.getImageData(0,0,c.width,c.height);

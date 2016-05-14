@@ -96,10 +96,15 @@ function generate_pass(imgdatalength,information,pass){
 }
 
 function fftset(imgData,fftdata,width,height,setarray,copy,blocksizepow,lim){
+    function norm(a){
+        a=Math.round(a);
+        a=(a>255)?255:a;
+        return (a<0)?0:a;
+    }
     var fftdatalength=fftdata.length;
     var datalength=setarray.length;
     for(var i=0;i<datalength;i++) for(var j=0;j<copy;j++){
-        fftdata[i*copy+j][0]=(setarray[i])?fft_setbit(fftdata[i*copy+j][0],lim):fft_unsetbit(fftdata[i*copy+j][0],lim);
+        fftdata[i*copy+j][0].real=(setarray[i])?fft_setbit(fftdata[i*copy+j][0].real,lim):fft_unsetbit(fftdata[i*copy+j][0].real,lim);
     }
     var blocksize= 1 << blocksizepow;
     var w_ite=Math.floor(width/blocksize);
@@ -112,7 +117,7 @@ function fftset(imgData,fftdata,width,height,setarray,copy,blocksizepow,lim){
             {
                 var tmp=imageFFT(fftdata[count], blocksize, blocksize,true);               
                 for(var i=0;i<blocksize;i++) for(var j=0;j<blocksize;j++){
-                    imgData[((h*blocksize+i)*width+w*blocksize+j)*4+chann]=tmp[i*blocksize+j]
+                    imgData[((h*blocksize+i)*width+w*blocksize+j)*4+chann]=norm(tmp[i*blocksize+j].real);
                 }
                 count++;
             }

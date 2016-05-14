@@ -91,7 +91,7 @@ function extractBitArrayFFT(fftdata,copy,lim)
     for(var i=0;i<resultlength;i++){
         var tmp=Array();
         for(var j=0;j<copy;j++){
-            tmp.push(cbit(fftdata[i*copy+j][0],lim));
+            tmp.push(cbit(fftdata[i*copy+j][0].real,lim));
         }
         result.push(comb(tmp));
     }
