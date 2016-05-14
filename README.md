@@ -1,8 +1,26 @@
 #CryptoStego  
 JS library for steganography with encryption - Hide text in an image with encryption and obfuscation.    
+##DEMO  
+[http://zeruniverse.github.io/CryptoStego/](http://zeruniverse.github.io/CryptoStego/)  
+**Note: Library needs HTML5 support!**
+  
 ##Download  
 Download [cryptostego.min.js](https://github.com/zeruniverse/CryptoStego/releases/download/v1.0/cryptostego.min.js)  
 **Note: This JS library needs HTML5 support!**  
+  
+##Features  
++ Random initialization of invalid bits - obfuscation  
++ Non-linear bit-by-bit message storage  
++ Valid bits and their order decided by sha512-based hash function related to password  
++ LSB (Least Significant Bit) mode
+  + Use least significant bits of RGB channels of each pixels to store message  
+  + Result image visually identical to original image  
+  + Can only stored in non-compressed format such as PNG  
++ Fast Fourier mode
+  + Store information by slightly changing lowest frequency component of each block in frequency domain  
+  + Robust to image compression but stores less data compared to LSB mode  
+  + Result image looks different from original one  
+  
 ##Usage  
 This library provides 3 functions. Use `<script src="cryptostego.min.js"></script>` in your HTML to include this library.  
 ### `loadIMGtoCanvas(inputid, canvasid, callback, maxsize=0)`  
@@ -62,8 +80,77 @@ This function writes your message into image in canvas `canvasid`. Before callin
   
 ### `readMsgFromCanvas(canvasid,pass='',fft=false,copy=5,blocksizepow=2,lim=80)`  
 This function reads your message from image in canvas `canvasid`. Before calling this function, make sure some image is loaded in `canvasid`. Usually, this function will be called in callback function of `loadIMGtoCanvas`  
-+ **To successfully read message, `pass`,`fft`,`copy`,`blocksizepow`,`lim` should be same as what you use in `writeMsgToCanvas`. And the image in `canvasid` should be the result image of `writeMsgToCanvas`.  
++ **To successfully read message, `pass`,`fft`,`copy`,`blocksizepow`,`lim` should be same as what you use in `writeMsgToCanvas`. And the image in `canvasid` should be the result image of `writeMsgToCanvas`.**  
 + All parameters have same meaning as in `writeMsgToCanvas`.  
 + Return value is a string or `null`  
   + `null` means fail to read message. It might caused by wrong password, wrong image or wrong parameters.  
-  + returned string is the message retrieved. It might be some meaning less characters on error.  
+  + returned string is the message retrieved. It might be some meaningless characters on error.  
+  
+##Compression Robustness for fast Fourier mode  
+###Raw image and data  
+Image before encryption (268KB in PNG format):  
+![dandelionclock](https://cloud.githubusercontent.com/assets/4648756/15265727/6b29773e-1941-11e6-9245-3275ff0afcf2.jpg)  
+
+Data:  
+```
+你好，世界！
+HELLO WORLD!
+¡HOLA MUNDO!
+مرحبا بالعالم!
+BONJOUR LE MONDE!
+こんにちは世界！
+ПРИВЕТ МИР!
+```
+
+Use empty password and default value of `blocksizepow`, `copy` and `lim`  
+  
+##Compression Ratio 56.0% (150KB)  
+![result 3](https://cloud.githubusercontent.com/assets/4648756/15265750/1986efc8-1942-11e6-8f4e-754e4c221f62.jpg)  
+Retrieved data correct!  
+  
+##Compression Ratio 25.8% (69.1KB)  
+![optimized-result 3](https://cloud.githubusercontent.com/assets/4648756/15265761/7e502a0a-1942-11e6-918e-f86fce06b001.jpg)  
+Retrieved data correct!  
+  
+##Compression Ratio 16.8% (44.9KB)  
+![result 3 1](https://cloud.githubusercontent.com/assets/4648756/15265783/5202b476-1943-11e6-921d-cbf1e1b76075.jpg)
+Result:  
+```
+你好，世界！
+HELLO WORLD!
+¡HKL`MUODO!
+х阍٨اب诙عالم!
+BONJOUR LE MONDE!
+こ㊓ㅫメは世界！
+ПȠИВЕТ ܐ萠!
+```  
+Mostly correct!  
+  
+##Compression Ratio 10% (26.8KB)  
+![result 3 __1463194197_207 23 217 104](https://cloud.githubusercontent.com/assets/4648756/15265804/fc1d9c6e-1943-11e6-8325-6a5575447c8b.jpg)
+Result:  
+```
+你祽，世界＃
+ōLO,׏RLD!
+áHόA mUNLG 
+معЭ記砘蘧لؙܧلمኂϊJOUr(Le MONDQc
+こんにちは世界！
+ПРИВЕТ МИР!
+```  
+Half correct!  
+  
+##Compression Ratio 2.35% (6.3KB)  
+![result 3 __1463194357_207 23 217 104](https://cloud.githubusercontent.com/assets/4648756/15265818/7c9b7352-1944-11e6-9f32-3136fcdfb57d.jpg)
+Result:  
+```
+ERROR RETRIEVING MESSAGE
+```  
+Corrupted!  
+  
+##Coding Example  
+See `example/` folder  
+  
+##Copyright  
+Jeffery Zhao  
+License: GNU **A**GPL v3.0 or later  
+The copyright for Crypto-JS is reserved by its authors.  
