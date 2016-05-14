@@ -113,7 +113,7 @@ Retrieved data correct!
 Retrieved data correct!  
   
 ##Compression Ratio 16.8% (44.9KB)  
-![result 3 1](https://cloud.githubusercontent.com/assets/4648756/15265783/5202b476-1943-11e6-921d-cbf1e1b76075.jpg)
+![result 3 1](https://cloud.githubusercontent.com/assets/4648756/15265783/5202b476-1943-11e6-921d-cbf1e1b76075.jpg)  
 Result:  
 ```
 你好，世界！
@@ -127,7 +127,7 @@ BONJOUR LE MONDE!
 Mostly correct!  
   
 ##Compression Ratio 10% (26.8KB)  
-![result 3 __1463194197_207 23 217 104](https://cloud.githubusercontent.com/assets/4648756/15265804/fc1d9c6e-1943-11e6-8325-6a5575447c8b.jpg)
+![result 3 __1463194197_207 23 217 104](https://cloud.githubusercontent.com/assets/4648756/15265804/fc1d9c6e-1943-11e6-8325-6a5575447c8b.jpg)  
 Result:  
 ```
 你祽，世界＃
@@ -140,7 +140,7 @@ Result:
 Half correct!  
   
 ##Compression Ratio 2.35% (6.3KB)  
-![result 3 __1463194357_207 23 217 104](https://cloud.githubusercontent.com/assets/4648756/15265818/7c9b7352-1944-11e6-9f32-3136fcdfb57d.jpg)
+![result 3 __1463194357_207 23 217 104](https://cloud.githubusercontent.com/assets/4648756/15265818/7c9b7352-1944-11e6-9f32-3136fcdfb57d.jpg)  
 Result:  
 ```
 ERROR RETRIEVING MESSAGE
