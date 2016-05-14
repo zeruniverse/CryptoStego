@@ -1,6 +1,11 @@
 //Write msg to the image in canvasid.
 //Return: null - fail. 1 - successful
-function writeMsgToCanvas(canvasid,msg,pass='',fft=false,copy=5,blocksizepow=2,lim=80){
+function writeMsgToCanvas(canvasid,msg,pass,fft,copy,blocksizepow,lim){
+    fft=(fft === undefined)?false:fft;
+    pass=(pass=== undefined)?'':pass;
+    copy=(copy=== undefined)?5:copy;
+    blocksizepow=(blocksizepow=== undefined)?2:blocksizepow;
+    lim=(lim=== undefined)?80:lim;
     var c=document.getElementById(canvasid);
     var ctx=c.getContext("2d");
     var imgData=ctx.getImageData(0,0,c.width,c.height);
@@ -16,7 +21,12 @@ function writeMsgToCanvas(canvasid,msg,pass='',fft=false,copy=5,blocksizepow=2,l
 
 //Read msg from the image in canvasid.
 //Return msg (null -> fail)
-function readMsgFromCanvas(canvasid,pass='',fft=false,copy=5,blocksizepow=2,lim=80){
+function readMsgFromCanvas(canvasid,pass,fft,copy,blocksizepow,lim){
+    fft=(fft === undefined)?false:fft;
+    pass=(pass=== undefined)?'':pass;
+    copy=(copy=== undefined)?5:copy;
+    blocksizepow=(blocksizepow=== undefined)?2:blocksizepow;
+    lim=(lim=== undefined)?80:lim;
     var c=document.getElementById(canvasid);
     var ctx=c.getContext("2d");
     var imgData=ctx.getImageData(0,0,c.width,c.height);
@@ -29,7 +39,8 @@ function readMsgFromCanvas(canvasid,pass='',fft=false,copy=5,blocksizepow=2,lim=
 }
 
 //load image from html5 input and execute callback() if successful
-function loadIMGtoCanvas(inputid, canvasid, callback, maxsize=0) {
+function loadIMGtoCanvas(inputid, canvasid, callback, maxsize) {
+    maxsize=(maxsize=== undefined)?0:maxsize;
     var input = document.getElementById(inputid);
     if (input.files && input.files[0]) {
         var f = input.files[0];
