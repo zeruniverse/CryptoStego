@@ -1,5 +1,6 @@
 #CryptoStego  
 JS library for steganography with encryption - Hide text in an image with encryption and obfuscation.    
+I only tested this library in Chrome and Firefox. Please submit an issue if there're bugs in other browsers!  
 ##DEMO  
 [http://zeruniverse.github.io/CryptoStego/](http://zeruniverse.github.io/CryptoStego/)  
 **Note: Library needs HTML5 support!**
