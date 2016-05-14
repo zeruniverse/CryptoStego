@@ -10,13 +10,17 @@ Download [cryptostego.min.js](https://github.com/zeruniverse/CryptoStego/release
   
 ##Features  
 + Random initialization of invalid bits - obfuscation  
-+ Non-linear bit-by-bit message storage  
-+ Valid bits and their order decided by sha512-based hash function related to password  
-+ LSB (Least Significant Bit) mode
++ Non-linear bit-by-bit message storage.    
++ Valid bits and their order decided by sha512-based hash function  
++ Password decides the parameter in hash function. Different password will map message to different locations in the image  
++ No signal for password error. Wrong password results in wrong message  
+  
+##LSB (Least Significant Bit) mode
   + Use least significant bits of RGB channels of each pixels to store message  
   + Result image visually identical to original image  
   + Can only stored in non-compressed format such as PNG  
-+ Fast Fourier mode
+  
+##Fast Fourier mode
   + Store information by slightly changing lowest frequency component of each block in frequency domain  
   + Robust to image compression but stores less data compared to LSB mode  
   + Result image looks different from original one  
