@@ -42,7 +42,7 @@ function gethashval(str,modval,taken){
 //fast Fourier based on http://www.ituring.com.cn/article/121428 
 //ifft2() written by Jeffery.
 function imageFFT(dataArray, width, height, isIfft) {
-    isIfft=(isIfft===undefined)?false:true;
+    isIfft=(isIfft===undefined)?false:isIfft;
 	function fft(dataArray) {
 		this.mul = function(a, b) {
 			if (typeof(a) !== 'object') {
