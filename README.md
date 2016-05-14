@@ -69,7 +69,9 @@ This function writes your message into image in canvas `canvasid`. Before callin
 + `fft` specifies whether to use fast Fourier mode or LSB mode.  
   + `true` -> fast Fourier mode, result image robust to image compression.  
   + `false` -> LSB mode (default), result more similar to original image.  
-**All options below only work if you use fast Fourier mode**, and those options should be same in `writeMsg` and `readMsg`    
+  
+**All options below only work if you use fast Fourier mode**, and those options should be same in `writeMsg` and `readMsg`   
+   
 + `copy` specifies how many copies of message to keep in this image (defalut value is 5)  
   + `copy`=n means we will keep n identical copies of the message in this image. So if some is corrupted, we still have the correct message. 
   + `copy` is recommended to be odd integer  
