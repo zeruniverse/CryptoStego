@@ -3,8 +3,7 @@ JS library for steganography with encryption - Hide text in an image with encryp
 ##DEMO  
 [http://zeruniverse.github.io/CryptoStego/](http://zeruniverse.github.io/CryptoStego/)  
 **Note: Library needs HTML5 support!**  
-*Known Issue for DEMO: 'Force Download image file encoded in base64 as URL' does not work on IE. You might need to try the demo with Chrome, Firefox or Safari. However, the library itself works on IE.*  
-  
+   
 ##Download  
 Download [cryptostego.min.js](https://github.com/zeruniverse/CryptoStego/releases/download/v1.0/cryptostego.min.js)  
 **Note: This JS library needs HTML5 support!**  
@@ -95,7 +94,7 @@ This function reads your message from image in canvas `canvasid`. Before calling
   
 ##Compression Robustness for fast Fourier mode  
 ###Raw image and data  
-Image before encryption (268KB in PNG format):  
+Image before steganography (268KB in PNG format):  
 ![dandelionclock](https://cloud.githubusercontent.com/assets/4648756/15265727/6b29773e-1941-11e6-9245-3275ff0afcf2.jpg)  
 
 Data:  
