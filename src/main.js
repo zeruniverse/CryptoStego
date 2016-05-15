@@ -94,7 +94,7 @@ function writeMsgToCanvas(canvasid,msg,pass,mode){
 
 //Read msg from the image in canvasid.
 //Return msg (null -> fail)
-function readMsgFromCanvas_single(canvasid,pass,mode){
+function readMsgFromCanvas(canvasid,pass,mode){
     mode=(mode=== undefined)?0:parseInt(mode);
     switch (mode) {
         case 1: return readMsgFromCanvas_block(canvasid,pass,3,4,300);
