@@ -94,7 +94,7 @@ function fastAVGSet(imgData,SUMdata,width,height,setarray,blocksizepow,lim){
             for(var w=0;w<w_ite;w++)
             {               
                 for(var i=0;i<blocksize;i++) for(var j=0;j<blocksize;j++){
-                    imgData[((h*blocksize+i)*width+w*blocksize+j)*4+chann]=norm(imgData[((h*blocksize+i)*width+w*blocksize+j)*4+chann]*(SUMdata1/SUMdata));
+                    imgData[((h*blocksize+i)*width+w*blocksize+j)*4+chann]=norm(imgData[((h*blocksize+i)*width+w*blocksize+j)*4+chann]*(SUMdata1[count]/SUMdata[count]));
                 }
                 count++;
             }
@@ -235,12 +235,12 @@ function writeMsgToCanvas_AVG(canvasid,msg,pass,copy,blocksizepow,lim){
     var c=document.getElementById(canvasid);
     var ctx=c.getContext("2d");
     var imgData=ctx.getImageData(0,0,c.width,c.height);
-    var SUMdata=fastSUM(imgData,c.width,c.height,blocksizepow);
+    var SUMdata=fastSUM(imgData.data,c.width,c.height,blocksizepow);
     var blocksize= 1 << blocksizepow;
     var datalength=SUMdata.length;
     var setarray = generate_pass(datalength,msg,pass,copy);
     if(setarray==null) return null;
-    fastAVGSet(imgData,SUMdata,c.width,c.height,setarray,blocksizepow,lim)
+    fastAVGSet(imgData.data,SUMdata,c.width,c.height,setarray,blocksizepow,lim)
     ctx.putImageData(imgData,0,0);
     return 1;
 }

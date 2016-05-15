@@ -131,7 +131,7 @@ function readMsgFromCanvas_AVG(canvasid,pass,copy,blocksizepow,lim){
     var c=document.getElementById(canvasid);
     var ctx=c.getContext("2d");
     var imgData=ctx.getImageData(0,0,c.width,c.height);
-    var SUMdata=fastSUM(imgData,c.width,c.height,blocksizepow);
+    var SUMdata=fastSUM(imgData.data,c.width,c.height,blocksizepow);
     var bitarray = extractBitArray_AVG(SUMdata,blocksizepow,lim);
     //if (bitarray[1]) return null;
     var msgArray=extractMsgArray_pass(bitarray,pass,copy);
