@@ -5,7 +5,7 @@ JS library for steganography with encryption - Hide text in an image with encryp
 **Note: Library needs HTML5 support!**  
    
 ##Download  
-Download [cryptostego.min.js](https://github.com/zeruniverse/CryptoStego/releases/download/v1.0/cryptostego.min.js)  
+Download [cryptostego.min.js](https://github.com/zeruniverse/CryptoStego/releases/download/v1.3/cryptostego.min.js)  
 **Note: This JS library needs HTML5 support!**  
   
 ##Features  
@@ -14,20 +14,18 @@ Download [cryptostego.min.js](https://github.com/zeruniverse/CryptoStego/release
 + Valid bits and their order decided by sha512-based hash function  
 + Password decides the parameter in hash function. Different password will map message to different locations in the image  
 + No signal for password error. Wrong password results in wrong message  
-  
-##LSB (Least Significant Bit) mode
++ LSB (Least Significant Bit) mode
   + Use least significant bits of RGB channels of each pixels to store message  
   + Result image visually identical to original image  
   + Can only stored in non-compressed format such as PNG  
-  
-##Fast Fourier mode
++ Fast Fourier mode
   + Store information by slightly changing lowest frequency component of each block in frequency domain  
   + Robust to image compression but stores less data compared to LSB mode  
   + Result image looks different from original one  
   
 ##Usage  
 This library provides 3 functions. Use `<script src="cryptostego.min.js"></script>` in your HTML to include this library.  
-### `loadIMGtoCanvas(inputid, canvasid, callback, maxsize=0)`  
+### `loadIMGtoCanvas(inputid, canvasid, callback, maxsize)`  
 This function loads an image from file input to a dynamically generated canvas. After that, it will call `callback()` function to do some stuff, and then delete the generated canvas.
   + `inputid` is the id of the html5 file input.
     + You need to put a file input element like `<input type="file" id="file" accept="image/*" />` in your HTML and ask user to select an image here.  
@@ -41,9 +39,9 @@ This function loads an image from file input to a dynamically generated canvas. 
     ``` JavaScript
     //callback function is writefunc()
     function writefunc(){
-        if(writeMsgToCanvas('canvas',$("#msg").val(),$("#pass").val(),true)!=null){ 
+        if(writeMsgToCanvas('canvas',$("#msg").val(),$("#pass").val(),3)!=null){ 
         var myCanvas = document.getElementById("canvas"); //canvasid='canvas'  
-        var image = myCanvas.toDataURL("image/jpg");    
+        var image = myCanvas.toDataURL("image/jpeg",1.0);    
         var element = document.createElement('a');
         element.setAttribute('href', image);
         element.setAttribute('download', 'result.jpg');
@@ -61,32 +59,23 @@ This function loads an image from file input to a dynamically generated canvas. 
     + If `maxsize`<=0, image will not be scaled (use original size). This is not recommended if your callback function is steganography function (write info to image). As super large image will make browser dead. A recommended value is 500.  
     + Make sure when callback function is reading info from image, your `maxsize` is at least the `maxsize` you use for steganography. As steganography algorithm is not robust to scale.    
   
-### `writeMsgToCanvas(canvasid,msg,pass='',fft=false,copy=5,blocksizepow=2,lim=80)`  
+### `writeMsgToCanvas(canvasid,msg,pass,mode)`  
 This function writes your message into image in canvas `canvasid`. Before calling this function, make sure some image is loaded in `canvasid`. Usually, this function will be called in callback function of `loadIMGtoCanvas`  
 + `canvasid` specifies the id of the canvas to whose image the message will be written to.  
 + `msg` specifies the message.  
-+ `pass` specifies the password for retrieving the message.  
-+ `fft` specifies whether to use fast Fourier mode or LSB mode.  
-  + `true` -> fast Fourier mode, result image robust to image compression.  
-  + `false` -> LSB mode (default), result more similar to original image.  
++ `pass` specifies the password for retrieving the message. (default value is '')  
++ `mode` an integer specifies the steganography mode. [0-5]   
+  + `0` -> LSB mode (default), result image looks identical to original image.  
+  + `1`, `2` -> fast Fourier mode, result image looks almost identical to original image. Mode `1` stores 19 copies of information and is stable under compression ratio `0.1`. But Mode `1` has very low data capacity.   
+  + `3` -> fast Fourier mode, result image looks like images with distortion.  
+  + `4`, `5` -> fast Fourier mode, high robustness with bad secrecy. Result image looks very different from original one  
+  + Generally, if you don't need image compression robustness, use mode `0`, otherwise, mode `2` and `3` are recommended.
   
-**All options below only work if you use fast Fourier mode**, and those options should be same in `writeMsg` and `readMsg`   
-   
-+ `copy` specifies how many copies of message to keep in this image (defalut value is 5)  
-  + `copy`=n means we will keep n identical copies of the message in this image. So if some is corrupted, we still have the correct message. 
-  + `copy` is recommended to be odd integer  
-  + The larger the `copy` is, the less information the image can hold, and the more robustness to image compression the message has.  
-+ `blocksizepow` specifies the blocksize for fast Fourier transformation. (default value is 2)  
-  + `blocksize = 2^(blocksizepow)`. If `blocksizepow=2`, the fast Fourier transformation will be performed per 4*4 block.  
-  + Setting `blocksizepow` too large might slow down the process.  
-+ `lim` specifies the difference between a `true` value and a `false` value (default value is 80)  
-  + All information stored in frequency domain is binary. The larger the `lim` is, the less likely message will be corrupted.   
-  + The larger the `lim` is, the more difference the result image will have compared to original image, and the more robustness to image compression the message has.  
 + Return value is either `null` or `1`, `null` stands for `fail` and `1` stands for `success`.  
   
-### `readMsgFromCanvas(canvasid,pass='',fft=false,copy=5,blocksizepow=2,lim=80)`  
+### `readMsgFromCanvas(canvasid,pass,mode)`  
 This function reads your message from image in canvas `canvasid`. Before calling this function, make sure some image is loaded in `canvasid`. Usually, this function will be called in callback function of `loadIMGtoCanvas`  
-+ **To successfully read message, `pass`,`fft`,`copy`,`blocksizepow`,`lim` should be same as what you use in `writeMsgToCanvas`. And the image in `canvasid` should be the result image of `writeMsgToCanvas`.**  
++ **To successfully read message, `pass` and `mode` should be same as what you use in `writeMsgToCanvas`. And the image in `canvasid` should be the result image of `writeMsgToCanvas`.**  
 + All parameters have same meaning as in `writeMsgToCanvas`.  
 + Return value is a string or `null`  
   + `null` means fail to read message. It might caused by wrong password, wrong image or wrong parameters.  
@@ -108,17 +97,17 @@ BONJOUR LE MONDE!
 ПРИВЕТ МИР!
 ```
 
-Use empty password and default value of `blocksizepow`, `copy` and `lim`  
+Use empty password and mode `3`. This is the result for v1.0. v1.3 should have better performance.    
   
-##Compression Ratio 56.0% (150KB)  
+###Compression Ratio 56.0% (150KB)  
 ![result 3](https://cloud.githubusercontent.com/assets/4648756/15265750/1986efc8-1942-11e6-8f4e-754e4c221f62.jpg)  
 Retrieved data correct!  
   
-##Compression Ratio 25.8% (69.1KB)  
+###Compression Ratio 25.8% (69.1KB)  
 ![optimized-result 3](https://cloud.githubusercontent.com/assets/4648756/15265761/7e502a0a-1942-11e6-918e-f86fce06b001.jpg)  
 Retrieved data correct!  
   
-##Compression Ratio 16.8% (44.9KB)  
+###Compression Ratio 16.8% (44.9KB)  
 ![result 3 1](https://cloud.githubusercontent.com/assets/4648756/15265783/5202b476-1943-11e6-921d-cbf1e1b76075.jpg)  
 Result:  
 ```
@@ -132,7 +121,7 @@ BONJOUR LE MONDE!
 ```  
 Mostly correct!  
   
-##Compression Ratio 10% (26.8KB)  
+###Compression Ratio 10% (26.8KB)  
 ![result 3 __1463194197_207 23 217 104](https://cloud.githubusercontent.com/assets/4648756/15265804/fc1d9c6e-1943-11e6-8325-6a5575447c8b.jpg)  
 Result:  
 ```
@@ -145,7 +134,7 @@ Result:
 ```  
 Half correct!  
   
-##Compression Ratio 2.35% (6.3KB)  
+###Compression Ratio 2.35% (6.3KB)  
 ![result 3 __1463194357_207 23 217 104](https://cloud.githubusercontent.com/assets/4648756/15265818/7c9b7352-1944-11e6-9f32-3136fcdfb57d.jpg)  
 Result:  
 ```
@@ -155,6 +144,12 @@ Corrupted!
   
 ##Coding Example  
 See `example/` folder  
+  
+##Developing  
+This project is currently under development. So you might encounter into some issues while using it. If so, please submit a bug.  
+###Known Issues  
++ functions for changing higher frequency component in Fourier matrix already implemented. But this method seems not stable.  
++ functions for fast averaging implemented. Also, this method is not stable.  
   
 ##Copyright  
 Jeffery Zhao  
