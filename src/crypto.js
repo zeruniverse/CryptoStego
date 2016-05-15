@@ -1,16 +1,3 @@
-function numarray(num){
-    var result=Array();
-    for(var j=2097152; j>0; j=Math.floor(j/2))
-    {
-        if(Math.floor(num/j))
-        {
-            result.push(true);
-            num = num%j;
-        }else result.push(false);
-    }
-    return result;
-}
-
 function isInclude(arr,obj) {
     return (arr.indexOf(obj) != -1);
 }
@@ -316,6 +303,24 @@ function fftconvert(imgData,width,height,blocksizepow){
                     tmp.push(imgData[((h*blocksize+i)*width+w*blocksize+j)*4+chann]);
                 }
                 result.push(imageFFT(tmp, blocksize, blocksize));
+            }
+    return result;
+}
+
+function fastSUM(imgData,width,height,blocksizepow){
+    var blocksize= 1 << blocksizepow;
+    var w_ite=Math.floor(width/blocksize);
+    var h_ite=Math.floor(height/blocksize);
+    var result=Array();
+    for(var chann=0;chann<3;chann++)
+        for(var h=0;h<h_ite;h++)
+            for(var w=0;w<w_ite;w++)
+            {
+                var tmp=0;
+                for(var i=0;i<blocksize;i++) for(var j=0;j<blocksize;j++){
+                    tmp=tmp+imgData[((h*blocksize+i)*width+w*blocksize+j)*4+chann];
+                }
+                result.push(tmp);
             }
     return result;
 }

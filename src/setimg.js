@@ -53,27 +53,58 @@ function initialize(length){ //set bit1, bit2 so we can have at most 4 modes.  /
     return result;
 }
 
-function generate_pass(imgdatalength,information,pass){
+function generate_pass(imgdatalength,information,pass,copy){
     var info=bitconvert(information);
-    if(info.length>imgdatalength-22 || info.length > 4194300 * 8) {alert('TEXT TOO LONG!'); return null;}
-    var result=initialize(imgdatalength,true,false);
+    if (info.length*copy>imgdatalength-24) {alert('TEXT TOO LONG!'); return null;}
+    var result=initialize(imgdatalength);
     var infolen=info.length;
-    var lenarray=numarray(Math.floor(infolen/8));
     pass=String(CryptoJS.SHA512(pass));
     var taken=Array();
     var modval=imgdatalength;
-    for(var i=0;i<22;i++){
-        result[gethashval(pass,modval,taken)]=lenarray[i];
+    for(var i=0;i<infolen;i++) for(var j=0;j<copy;j++) {
+        result[gethashval(pass,modval,taken)]=info[i];
         pass=String(CryptoJS.SHA512(pass));
     }
-    for(var i=0;i<infolen;i++){
-        result[gethashval(pass,modval,taken)]=info[i];
+    for(var j=0;j<24;j++) {
+        result[gethashval(pass,modval,taken)]=true;
         pass=String(CryptoJS.SHA512(pass));
     }
     return result;
 }
 
-function fftset(imgData,fftdata,width,height,setarray,copy,blocksizepow,lim){
+function fastAVGSet(imgData,SUMdata,width,height,setarray,blocksizepow,lim){
+    function norm(a){
+        a=Math.round(a);
+        a=(a>255)?255:a;
+        return (a<0)?0:a;
+    }
+    var datalength=setarray.length;
+    var SUMdata1=Array();
+    SUMdata1 = SUMdata.slice(0);
+    for(var i=0;i<datalength;i++) {
+        SUMdata1[i]=(setarray[i])?fft_setbit(SUMdata1[i],lim):fft_unsetbit(SUMdata1[i],lim);
+    }
+    var blocksize= 1 << blocksizepow;
+    var w_ite=Math.floor(width/blocksize);
+    var h_ite=Math.floor(height/blocksize);
+    var result=Array();
+    var count=0;
+    for(var chann=0;chann<3;chann++)
+        for(var h=0;h<h_ite;h++)
+            for(var w=0;w<w_ite;w++)
+            {               
+                for(var i=0;i<blocksize;i++) for(var j=0;j<blocksize;j++){
+                    imgData[((h*blocksize+i)*width+w*blocksize+j)*4+chann]=norm(imgData[((h*blocksize+i)*width+w*blocksize+j)*4+chann]*(SUMdata1/SUMdata));
+                }
+                count++;
+            }
+    for (var i=0;i<imgData.length;i+=4)
+    {
+        imgData[i+3]=255;
+    }
+}
+
+function fftset(imgData,fftdata,width,height,setarray,blocksizepow,lim){
     function norm(a){
         a=Math.round(a);
         a=(a>255)?255:a;
@@ -81,8 +112,8 @@ function fftset(imgData,fftdata,width,height,setarray,copy,blocksizepow,lim){
     }
     var fftdatalength=fftdata.length;
     var datalength=setarray.length;
-    for(var i=0;i<datalength;i++) for(var j=0;j<copy;j++){
-        fftdata[i*copy+j][0].real=(setarray[i])?fft_setbit(fftdata[i*copy+j][0].real,lim):fft_unsetbit(fftdata[i*copy+j][0].real,lim);
+    for(var i=0;i<datalength;i++){
+        fftdata[i][0].real=(setarray[i])?fft_setbit(fftdata[i][0].real,lim):fft_unsetbit(fftdata[i][0].real,lim);
     }
     var blocksize= 1 << blocksizepow;
     var w_ite=Math.floor(width/blocksize);
@@ -105,7 +136,7 @@ function fftset(imgData,fftdata,width,height,setarray,copy,blocksizepow,lim){
     }
 }
 
-function fftset_block(imgData,fftdata,width,height,setarray,copy,blocksizepow,lim){
+function fftset_block(imgData,fftdata,width,height,setarray,blocksizepow,lim){
     function norm(a){
         a=Math.round(a);
         a=(a>255)?255:a;
@@ -122,7 +153,7 @@ function fftset_block(imgData,fftdata,width,height,setarray,copy,blocksizepow,li
     var datalength=setarray.length;
     var blocksize= 1 << blocksizepow;
     var count=0;
-    for(var i=0;i<datalength;i++) for(var j=0;j<copy;j++){
+    for(var i=0;i<datalength;i++){
         //write data to top-left 2*2 block of each FFT matrix except [0].
         //[1,1] is not stable, drop it.
         var matrixloc = count % 2;
@@ -151,4 +182,65 @@ function fftset_block(imgData,fftdata,width,height,setarray,copy,blocksizepow,li
     {
         imgData[i+3]=255;
     }
+}
+
+//Write msg to the image in canvasid.
+//Return: null - fail. 1 - successful
+function writeMsgToCanvas_single(canvasid,msg,pass,fft,copy,blocksizepow,lim){
+    fft=(fft === undefined)?false:fft;
+    pass=(pass=== undefined)?'':pass;
+    copy=(copy=== undefined)?5:copy;
+    blocksizepow=(blocksizepow=== undefined)?2:blocksizepow;
+    lim=(lim=== undefined)?80:lim;
+    var c=document.getElementById(canvasid);
+    var ctx=c.getContext("2d");
+    var imgData=ctx.getImageData(0,0,c.width,c.height);
+    var fftdata=(fft)?fftconvert(imgData.data,c.width,c.height,blocksizepow):null;
+    var blocksize= 1 << blocksizepow;
+    var datalength=(fft)?fftdata.length:Math.floor(imgData.data.length/4)*3;
+    var setarray = (fft)?generate_pass(datalength,msg,pass,copy):generate_pass(datalength,msg,pass,1);
+    if(setarray==null) return null;
+    (fft)?fftset(imgData.data,fftdata,c.width,c.height,setarray,blocksizepow,lim):setimgdata(imgData,setarray);
+    ctx.putImageData(imgData,0,0);
+    return 1;
+}
+
+//block version fft
+//Write msg to the image in canvasid.
+//Return: null - fail. 1 - successful
+function writeMsgToCanvas_block(canvasid,msg,pass,copy,blocksizepow,lim){
+    pass=(pass=== undefined)?'':pass;
+    copy=(copy=== undefined)?5:copy;
+    blocksizepow=(blocksizepow=== undefined)?3:blocksizepow;
+    blocksizepow=(blocksizepow<3)?3:blocksizepow;
+    lim=(lim=== undefined)?1:lim;
+    var c=document.getElementById(canvasid);
+    var ctx=c.getContext("2d");
+    var imgData=ctx.getImageData(0,0,c.width,c.height);
+    var fftdata=fftconvert(imgData.data,c.width,c.height,blocksizepow);
+    var blocksize= 1 << blocksizepow;
+    var datalength=Math.floor(fftdata.length*2);
+    var setarray = generate_pass(datalength,msg,pass,copy);
+    if(setarray==null) return null;
+    fftset_block(imgData.data,fftdata,c.width,c.height,setarray,blocksizepow,lim);
+    ctx.putImageData(imgData,0,0);
+    return 1;
+}
+
+function writeMsgToCanvas_AVG(canvasid,msg,pass,copy,blocksizepow,lim){
+    pass=(pass=== undefined)?'':pass;
+    copy=(copy=== undefined)?5:copy;
+    blocksizepow=(blocksizepow=== undefined)?3:blocksizepow;
+    lim=(lim=== undefined)?50:lim;
+    var c=document.getElementById(canvasid);
+    var ctx=c.getContext("2d");
+    var imgData=ctx.getImageData(0,0,c.width,c.height);
+    var SUMdata=fastSUM(imgData,c.width,c.height,blocksizepow);
+    var blocksize= 1 << blocksizepow;
+    var datalength=SUMdata.length;
+    var setarray = generate_pass(datalength,msg,pass,copy);
+    if(setarray==null) return null;
+    fastAVGSet(imgData,SUMdata,c.width,c.height,setarray,blocksizepow,lim)
+    ctx.putImageData(imgData,0,0);
+    return 1;
 }
