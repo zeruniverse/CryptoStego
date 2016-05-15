@@ -33,7 +33,7 @@ Results:<br />
 <script>
 function writeIMG(){
     function writefunc(){
-        if(writeMsgToCanvas('canvas',$("#msg").val(),$("#pass").val())!=null){ 
+        if(writeMsgToCanvas('canvas',$("#msg").val(),$("#pass").val(),0)!=null){ 
         var myCanvas = document.getElementById("canvas");  
         var image = myCanvas.toDataURL("image/png");    
         var element = document.createElement('a');
@@ -49,7 +49,7 @@ function writeIMG(){
 }
 function readIMG(){
     function readfunc(){
-        var t=readMsgFromCanvas('canvas',$("#pass1").val());
+        var t=readMsgFromCanvas('canvas',$("#pass1").val(),0);
         if(t!=null){
             t=t.split('&').join('&amp;');
             t=t.split(' ').join('&nbsp;'); 
