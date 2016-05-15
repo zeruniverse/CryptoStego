@@ -39,17 +39,19 @@
 
 <h4 style="color:blue">Step1. Select an image from your computer (Don't use image smaller than 64*64)</h4>
 <p><input type="file" id="file" accept="image/*" /></p>
-<h4 style="color:blue">Step2. Choose a steganography mode below</h4>
+<h4 style="color:blue">Step2. Choose a robustness level below</h4>
 <div><p>
-  <p><label for="m0"><input type="radio" name="mode" id="m0" value=0 checked="checked" /> Best Secrecy (Result image looks identical to original one, LSB method)</label></p>
-  <p><label for="m1"><input type="radio" name="mode" id="m1" value=1 /> Some image compression robustness (fast Fourier method)</label></p>
-  <p><label for="m2"><input type="radio" name="mode" id="m2" value=2 /> Best image compression robustness (fast Fourier method.)</label></p>
+  <p><label for="m0"><input type="radio" name="mode" id="m0" value=0 checked="checked" /> Level 0 - Best Secrecy, No Robustness to Compression</label></p>
+  <p><label for="m1"><input type="radio" name="mode" id="m1" value=1 /> Level 1 - (Warning: This level has very low data capacity)</label></p>
+  <p><label for="m2"><input type="radio" name="mode" id="m2" value=2 /> Level 2</label></p>
+  <p><label for="m3"><input type="radio" name="mode" id="m3" value=3 /> Level 3</label></p>
+  <p><label for="m4"><input type="radio" name="mode" id="m4" value=4 /> Level 4</label></p>
+  <p><label for="m5"><input type="radio" name="mode" id="m5" value=5 /> Level 5 - Best Robustness to Compression, Worst Secrecy</label></p>
   <p> </p>
-  <p style="color:red">If you're going to retrieve message, your mode selected here must be the same mode you use to generate the image!</p>
+  <p style="color:red">If you're going to retrieve message, your level selected here must be the same level you use to generate the image!</p>
 </p></div>
 <h4 style="color:blue">Step3. Optionally set/input a password for retrieving message</h4>
 <p>Password: <input type="text" id="pass" value="" placeholder="No Password"/></p>
-<p style="color:red">Leaving this blank empty means no password. Therefore <strong>ANY PASSWORD</strong>(including empty string) can be used to retrieve message in the image.</p>
 <h4 style="color:blue">Results</h4>
 <p>
 <div id="result" style="background-color: rgba(0,255,0,0.3); padding: 10px 10px 10px 10px;">Please finish step 1~3 above and click a button below. Your result will then show up here!</div>
@@ -108,10 +110,7 @@ function writeIMG(){
         if (selected.length > 0) {
             selectedVal = selected.val();
         }
-        var t=null;
-        if(selectedVal==1) t = writeMsgToCanvas('canvas',$("#msg").val(),$("#pass").val(),true);
-        else if (selectedVal==2) t = writeMsgToCanvas('canvas',$("#msg").val(),$("#pass").val(),true,3,3,1500);
-        else t = writeMsgToCanvas('canvas',$("#msg").val(),$("#pass").val());
+        var t = writeMsgToCanvas('canvas',$("#msg").val(),$("#pass").val(),selectedVal);
         if(t!=null){ 
             var myCanvas = document.getElementById("canvas");  
             var image = myCanvas.toDataURL("image/png");    
@@ -131,10 +130,7 @@ function readIMG(){
         if (selected.length > 0) {
             selectedVal = selected.val();
         }
-        var t=null;
-        if(selectedVal==1) t=readMsgFromCanvas('canvas',$("#pass").val(),true);
-        else if(selectedVal==2) t=readMsgFromCanvas('canvas',$("#pass").val(),true,3,3,1500);
-        else t=readMsgFromCanvas('canvas',$("#pass").val());
+        var t= readMsgFromCanvas('canvas',$("#pass").val(),selectedVal);
         if(t!=null){
             t=t.split('&').join('&amp;');
             t=t.split(' ').join('&nbsp;'); 
