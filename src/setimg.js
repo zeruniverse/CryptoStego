@@ -55,7 +55,7 @@ function initialize(length){ //set bit1, bit2 so we can have at most 4 modes.  /
 
 function generate_pass(imgdatalength,information,pass,copy){
     var info=bitconvert(information);
-    if (info.length*copy>imgdatalength-24) {alert('TEXT TOO LONG!'); return null;}
+    if ((info.length+24)*copy>imgdatalength) {alert('TEXT TOO LONG!'); return null;}
     var result=initialize(imgdatalength);
     var infolen=info.length;
     pass=String(CryptoJS.SHA512(pass));
@@ -65,7 +65,7 @@ function generate_pass(imgdatalength,information,pass,copy){
         result[gethashval(pass,modval,taken)]=info[i];
         pass=String(CryptoJS.SHA512(pass));
     }
-    for(var j=0;j<24;j++) {
+    for(var j=0;j<24;j++) for(var i=0;i<copy;i++) {
         result[gethashval(pass,modval,taken)]=true;
         pass=String(CryptoJS.SHA512(pass));
     }
