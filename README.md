@@ -1,5 +1,9 @@
 #CryptoStego  
-JS library for steganography with encryption - Hide text in an image with encryption and obfuscation. Support least significant bit mode and fast Fourier mode.      
+JS library for steganography with encryption - Hide text in an image with encryption and obfuscation. Support least significant bit mode and fast Fourier mode.    
+  
+##Version  
+v1.3  
+  
 ##DEMO  
 [http://zeruniverse.github.io/CryptoStego/](http://zeruniverse.github.io/CryptoStego/)  
 **Note: Library needs HTML5 support!**  
@@ -146,7 +150,7 @@ Corrupted!
 See `example/` folder  
   
 ##Developing  
-This project is currently under development. So you might encounter into some issues while using it. If so, please submit a bug.  
+This project is currently under development. So you might encounter into some problems while using it. If so, please submit an issue.  
 ###Known Issues  
 + functions for changing higher frequency component in Fourier matrix already implemented. But this method seems not stable.  
 + functions for fast averaging implemented. Also, this method is not stable.  
