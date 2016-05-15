@@ -86,7 +86,7 @@ This function reads your message from image in canvas `canvasid`. Before calling
   + returned string is the message retrieved. It might be some meaningless characters on error.  
   
 ##Compression Robustness for fast Fourier mode  
-**Result below is from v1.0 with parameters similar to mode 3 in v1.3. v1.3 should give a better result thanks to algorithm improvement. In v1.3, level 1 already has resistance to compression ratio 0.1**  
+**Result below is from v1.0 with parameters similar to mode 3 in v1.3. v1.3 should give a better result thanks to algorithm improvement. In v1.3, mode 1 already has resistance to compression ratio 0.1**  
 ###Raw image and data  
 Image before steganography (268KB in PNG format):  
 ![dandelionclock](https://cloud.githubusercontent.com/assets/4648756/15265727/6b29773e-1941-11e6-9245-3275ff0afcf2.jpg)  
