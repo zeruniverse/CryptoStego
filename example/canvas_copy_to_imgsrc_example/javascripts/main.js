@@ -1,35 +1,39 @@
-//Write msg to the image in canvasid.
-//Return: null - fail. 1 - successful
-function writeMsgToCanvas(canvasid,msg,pass='',fft=false,copy=5,blocksizepow=2,lim=80){
-    var c=document.getElementById(canvasid);
-    var ctx=c.getContext("2d");
-    var imgData=ctx.getImageData(0,0,c.width,c.height);
-    var fftdata=(fft)?fftconvert(imgData.data,c.width,c.height,blocksizepow):null;
-    var blocksize= 1 << blocksizepow;
-    var datalength=(fft)?Math.floor(fftdata.length/copy):Math.floor(imgData.data.length/4)*3;
-    var setarray = (pass=='')?generate_nopass(datalength,msg):generate_pass(datalength,msg,pass);
-    if(setarray==null) return null;
-    (fft)?fftset(imgData.data,fftdata,c.width,c.height,setarray,copy,blocksizepow,lim):setimgdata(imgData,setarray);
-    ctx.putImageData(imgData,0,0);
-    return 1;
+//MAIN
+// Parameters optimized according to tests.
+function writeMsgToCanvas(canvasid,msg,pass,mode){
+    mode=(mode=== undefined)?0:parseInt(mode);
+    switch (mode) {
+        case 1: return writeMsgToCanvas_block(canvasid,msg,pass,5,4,350);
+        case 2: return writeMsgToCanvas_single(canvasid,msg,pass,true,5,3,160);
+        case 3: return writeMsgToCanvas_single(canvasid,msg,pass,true,5,2,80);
+        case 4: return writeMsgToCanvas_single(canvasid,msg,pass,true,9,2,350);
+        case 5: return writeMsgToCanvas_single(canvasid,msg,pass,true,3,3,1300);
+        
+        //case : return writeMsgToCanvas_AVG(canvasid,msg,pass,3,2,300); --FAIL
+        case 0:
+        default: return writeMsgToCanvas_single(canvasid,msg,pass);
+    }
 }
 
 //Read msg from the image in canvasid.
 //Return msg (null -> fail)
-function readMsgFromCanvas(canvasid,pass='',fft=false,copy=5,blocksizepow=2,lim=80){
-    var c=document.getElementById(canvasid);
-    var ctx=c.getContext("2d");
-    var imgData=ctx.getImageData(0,0,c.width,c.height);
-    var fftdata=(fft)?fftconvert(imgData.data,c.width,c.height,blocksizepow):null;
-    var bitarray = (fft)?extractBitArrayFFT(fftdata,copy,lim):extractBitArray(imgData);
-    if (bitarray[1]) return null;
-    var msgArray=(bitarray[0])?extractMsgArray_pass(bitarray,pass):extractMsgArray_nopass(bitarray);
-    if(msgArray==null) return null;
-    return utf8Decode(msgArray);
+function readMsgFromCanvas(canvasid,pass,mode){
+    mode=(mode=== undefined)?0:parseInt(mode);
+    switch (mode) {
+        case 1: return readMsgFromCanvas_block(canvasid,pass,5,4,350);
+        case 2: return readMsgFromCanvas_single(canvasid,pass,true,5,3,160);
+        case 3: return readMsgFromCanvas_single(canvasid,pass,true,5,2,80);
+        case 4: return readMsgFromCanvas_single(canvasid,pass,true,9,2,350);
+        case 5: return readMsgFromCanvas_single(canvasid,pass,true,3,3,1300);
+        //case : return readMsgFromCanvas_AVG(canvasid,pass,3,2,300); --FAIL
+        case 0:
+        default: return readMsgFromCanvas_single(canvasid,pass);
+    }
 }
 
 //load image from html5 input and execute callback() if successful
-function loadIMGtoCanvas(inputid, canvasid, callback, maxsize=0) {
+function loadIMGtoCanvas(inputid, canvasid, callback, maxsize) {
+    maxsize=(maxsize=== undefined)?0:maxsize;
     var input = document.getElementById(inputid);
     if (input.files && input.files[0]) {
         var f = input.files[0];
