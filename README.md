@@ -5,7 +5,7 @@ JS library for steganography with encryption - Hide text in an image with encryp
 v1.3  
   
 ##DEMO  
-[http://zeruniverse.github.io/CryptoStego/](http://zeruniverse.github.io/CryptoStego/)  
+[http://stego.js.org](http://stego.js.org)  
 **Note: Library needs HTML5 support!**  
    
 ##Download  
