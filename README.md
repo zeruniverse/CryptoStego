@@ -1,33 +1,33 @@
-#CryptoStego  
+# CryptoStego  
 JS library for steganography with encryption - Hide text in an image with encryption and obfuscation. Support least significant bit mode and fast Fourier mode.    
   
-##Version  
+## Version  
 v1.3  
   
-##DEMO  
+## DEMO  
 [http://stego.js.org](http://stego.js.org)  
 **Note: Library needs HTML5 support!**  
    
-##Download  
+## Download  
 Download [cryptostego.min.js](https://github.com/zeruniverse/CryptoStego/releases/download/v1.3/cryptostego.min.js)  
 **Note: This JS library needs HTML5 support!**  
   
-##Features  
-+ Random initialization of invalid bits - obfuscation  
-+ Non-linear bit-by-bit message storage.    
-+ Valid bits and their order decided by sha512-based hash function  
-+ Password decides the parameter in hash function. Different password will map message to different locations in the image  
-+ No signal for password error. Wrong password results in wrong message  
+## Features  
++ Obfuscation - Random initialization of invalid bits  
++ Non-linear bit-by-bit message storage
++ Valid bits and their order decided by SHA512-based hash function  
++ Password decides the parameter in hash function. Different passwords map message to different locations in the image  
++ No signal for password error. Wrong password results in wrong message
 + LSB (Least Significant Bit) mode
-  + Use least significant bits of RGB channels of each pixels to store message  
-  + Result image visually identical to original image  
+  + Use least significant bits of RGB channels of each pixel to store message  
+  + Resulting image is visually identical to original one  
   + Can only stored in non-compressed format such as PNG  
 + Fast Fourier mode
   + Store information by slightly changing lowest frequency component of each block in frequency domain  
   + Robust to image compression but stores less data compared to LSB mode  
-  + Result image looks different from original one  
+  + Resulting image looks different from original one  
   
-##Usage  
+## Usage  
 This library provides 3 functions. Use `<script src="cryptostego.min.js"></script>` in your HTML to include this library.  
 ### `loadIMGtoCanvas(inputid, canvasid, callback, maxsize)`  
 This function loads an image from file input to a dynamically generated canvas. After that, it will call `callback()` function to do some stuff, and then delete the generated canvas.
@@ -85,9 +85,9 @@ This function reads your message from image in canvas `canvasid`. Before calling
   + `null` means fail to read message. It might caused by wrong password, wrong image or wrong parameters.  
   + returned string is the message retrieved. It might be some meaningless characters on error.  
   
-##Compression Robustness for fast Fourier mode  
+## Compression Robustness for fast Fourier mode  
 **Result below is from v1.0 with parameters similar to mode 3 in v1.3. v1.3 should give a better result thanks to algorithm improvement. In v1.3, mode 1 already has resistance to compression ratio 0.1**  
-###Raw image and data  
+### Raw image and data  
 Image before steganography (268KB in PNG format):  
 ![dandelionclock](https://cloud.githubusercontent.com/assets/4648756/15265727/6b29773e-1941-11e6-9245-3275ff0afcf2.jpg)  
 
@@ -102,15 +102,15 @@ BONJOUR LE MONDE!
 ПРИВЕТ МИР!
 ```
   
-###Compression Ratio 56.0% (150KB)  
+### Compression Ratio 56.0% (150KB)  
 ![result 3](https://cloud.githubusercontent.com/assets/4648756/15265750/1986efc8-1942-11e6-8f4e-754e4c221f62.jpg)  
 Retrieved data correct!  
   
-###Compression Ratio 25.8% (69.1KB)  
+### Compression Ratio 25.8% (69.1KB)  
 ![optimized-result 3](https://cloud.githubusercontent.com/assets/4648756/15265761/7e502a0a-1942-11e6-918e-f86fce06b001.jpg)  
 Retrieved data correct!  
   
-###Compression Ratio 16.8% (44.9KB)  
+### Compression Ratio 16.8% (44.9KB)  
 ![result 3 1](https://cloud.githubusercontent.com/assets/4648756/15265783/5202b476-1943-11e6-921d-cbf1e1b76075.jpg)  
 Result:  
 ```
@@ -124,7 +124,7 @@ BONJOUR LE MONDE!
 ```  
 Mostly correct!  
   
-###Compression Ratio 10% (26.8KB)  
+### Compression Ratio 10% (26.8KB)  
 ![result 3 __1463194197_207 23 217 104](https://cloud.githubusercontent.com/assets/4648756/15265804/fc1d9c6e-1943-11e6-8325-6a5575447c8b.jpg)  
 Result:  
 ```
@@ -137,7 +137,7 @@ Result:
 ```  
 Half correct!  
   
-###Compression Ratio 2.35% (6.3KB)  
+### Compression Ratio 2.35% (6.3KB)  
 ![result 3 __1463194357_207 23 217 104](https://cloud.githubusercontent.com/assets/4648756/15265818/7c9b7352-1944-11e6-9f32-3136fcdfb57d.jpg)  
 Result:  
 ```
@@ -145,16 +145,16 @@ ERROR RETRIEVING MESSAGE
 ```  
 Corrupted!  
   
-##Coding Example  
+## Coding Example  
 See `example/` folder  
   
-##Developing  
+## Developing  
 This project is currently under development. So you might encounter into some problems while using it. If so, please submit an issue.  
-###Known Issues  
+### Known Issues  
 + functions for changing higher frequency component in Fourier matrix already implemented. But this method seems not stable.  
 + functions for fast averaging implemented. Also, this method is not stable.  
   
-##Copyright  
+## Copyright  
 Jeffery Zhao  
 License: GNU **A**GPL v3.0 or later  
 The copyright for Crypto-JS is reserved by its authors.  
