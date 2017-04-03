@@ -1,5 +1,5 @@
 # CryptoStego  
-JS library for steganography with encryption - Hide text in an image with encryption and obfuscation. Support least significant bit mode and fast Fourier mode.    
+JS library for steganography with encryption - Hide text in an image with encryption and obfuscation. Support least significant bit mode and fast fourier mode.    
   
 ## Version  
 v1.3  
@@ -21,7 +21,7 @@ Download [cryptostego.min.js](https://github.com/zeruniverse/CryptoStego/release
 + LSB (Least Significant Bit) mode
   + Use least significant bits of RGB channels of each pixel to store message  
   + Resulting image is visually identical to original one  
-  + Can only stored in non-compressed format such as PNG  
+  + Can only be stored in non-compressed format such as PNG  
 + Fast Fourier mode
   + Store information by slightly changing lowest frequency component of each block in frequency domain  
   + Robust to image compression but stores less data compared to LSB mode  
@@ -149,10 +149,10 @@ Corrupted!
 See `example/` folder  
   
 ## Developing  
-This project is currently under development. So you might encounter into some problems while using it. If so, please submit an issue.  
+This project is under development. So you might encounter some problems while using it. If so, please submit an issue.  
 ### Known Issues  
-+ functions for changing higher frequency component in Fourier matrix already implemented. But this method seems not stable.  
-+ functions for fast averaging implemented. Also, this method is not stable.  
++ Functions for changing higher frequency component in Fourier matrix are implemented. But this method seems not stable.  
++ Functions for fast averaging are implemented. Also, this method is not stable.  
   
 ## Copyright  
 Jeffery Zhao  
