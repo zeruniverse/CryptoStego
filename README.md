@@ -1,5 +1,5 @@
 # CryptoStego  
-JS library for steganography with encryption - Hide text in an image with encryption and obfuscation. Support least significant bit mode and fast fourier mode.    
+JS library for steganography with encryption - Hide text in an image with encryption and obfuscation. Support least significant bit mode and fast Fourier mode.    
   
 ## Version  
 v1.3  
