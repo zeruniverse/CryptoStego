@@ -144,13 +144,7 @@ HELLO WORLDኂሏLA MUNDK!
 
   
 ## Coding Example  
-See `example/` folder  
-  
-## Developing  
-This project is under development. So you might encounter some problems while using it. If so, please submit an issue.  
-### Known Issues  
-+ Functions for changing higher frequency component in Fourier matrix are implemented. But this method seems not stable.  
-+ Functions for fast averaging are implemented. Also, this method is not stable.  
+See `example/` folder   
   
 ## Copyright  
 Jeffery Zhao  
