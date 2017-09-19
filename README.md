@@ -144,7 +144,7 @@ HELLO WORLDኂሏLA MUNDK!
 
   
 ## Coding Example  
-See `example/` folder   
+Refer to `example/` folder   
   
 ## Copyright  
 Jeffery Zhao  
