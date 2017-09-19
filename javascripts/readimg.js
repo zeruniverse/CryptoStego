@@ -16,7 +16,7 @@ function extractMsgArray_pass(bitarray,pass,copy)
 {
     function comb(a){
         var len=a.length;
-        var count=0
+        var count=0;
         for(var i=0;i<len;i++) if(a[i]) count++;
         if(count>=(len/2)) return true; else return false;
     }
@@ -47,94 +47,31 @@ function extractMsgArray_pass(bitarray,pass,copy)
     return msgarray;
 }
 
-function extractBitArrayFFT(fftdata,lim)
+function extractBitArraydct(dctdata,lim)
 {
     var result=Array();
-    var fftdatalength=fftdata.length;
-    for(var i=0;i<fftdatalength;i++){
-        result.push(cbit(fftdata[i][0].real,lim));
-    }
-    return result;
-}
-
-function extractBitArray_AVG(SUMdata,blocksizepow,lim)
-{
-    var blocksize= 1 << blocksizepow;
-    var result=Array();
-    var resultlength=SUMdata.length;
-    for(var i=0;i<resultlength;i++){
-        result.push(cbit(SUMdata[i],lim)); 
-    }
-    return result;
-}
-
-function extractBitArrayFFT_block(fftdata,blocksizepow,lim)
-{
-    var blocksize= 1 << blocksizepow;
-    var result=Array();
-    var fftdatalength=fftdata.length * 2;
-    var resultlength=fftdatalength;
-    for(var i=0;i<resultlength;i++){
-        var matrixloc = i % 2;
-        var arrayloc = Math.floor(i / 2);
-        var matrixrow = Math.floor(matrixloc / 2);
-        var matrixcol = matrixloc % 2;
-        if(matrixrow==0&&matrixcol==0) {matrixrow=1;matrixcol=0;}
-        result.push(cbit(Math.sqrt(Math.pow(fftdata[arrayloc][matrixrow*blocksize+matrixcol].real,2)+Math.pow(fftdata[arrayloc][matrixrow*blocksize+matrixcol].imag,2)),lim));
+    var dctdatalength=dctdata.length;
+    for(var i=0;i<dctdatalength;i++){
+        result.push(cbit(dctdata[i][0][0],lim));
+		result.push(cbit(dctdata[i][0][1],lim));
+		result.push(cbit(dctdata[i][0][2],lim));
     }
     return result;
 }
 
 //Read msg from the image in canvasid.
 //Return msg (null -> fail)
-function readMsgFromCanvas_single(canvasid,pass,fft,copy,blocksizepow,lim){
-    fft=(fft === undefined)?false:fft;
+function readMsgFromCanvas_single(canvasid,pass,dct,copy,lim){
+    dct=(dct === undefined)?false:dct;
     pass=(pass=== undefined)?'':pass;
     copy=(copy=== undefined)?5:copy;
-    blocksizepow=(blocksizepow=== undefined)?2:blocksizepow;
-    lim=(lim=== undefined)?80:lim;
+    lim=(lim=== undefined)?30:lim;
     var c=document.getElementById(canvasid);
     var ctx=c.getContext("2d");
     var imgData=ctx.getImageData(0,0,c.width,c.height);
-    var fftdata=(fft)?fftconvert(imgData.data,c.width,c.height,blocksizepow):null;
-    var bitarray = (fft)?extractBitArrayFFT(fftdata,lim):extractBitArray(imgData);
-    var msgArray=(fft)?extractMsgArray_pass(bitarray,pass,copy):extractMsgArray_pass(bitarray,pass,1);
-    if(msgArray==null) return null;
-    return utf8Decode(msgArray);
-}
-
-//Read msg from the image in canvasid.
-//Return msg (null -> fail)
-function readMsgFromCanvas_block(canvasid,pass,copy,blocksizepow,lim){
-    pass=(pass=== undefined)?'':pass;
-    copy=(copy=== undefined)?5:copy;
-    blocksizepow=(blocksizepow=== undefined)?3:blocksizepow;
-    blocksizepow=(blocksizepow<3)?3:blocksizepow;
-    lim=(lim=== undefined)?1:lim;
-    var c=document.getElementById(canvasid);
-    var ctx=c.getContext("2d");
-    var imgData=ctx.getImageData(0,0,c.width,c.height);
-    var fftdata=fftconvert(imgData.data,c.width,c.height,blocksizepow);
-    var bitarray = extractBitArrayFFT_block(fftdata,blocksizepow,lim);
-    //if (bitarray[1]) return null;
-    var msgArray=extractMsgArray_pass(bitarray,pass,copy);
-    if(msgArray==null) return null;
-    return utf8Decode(msgArray);
-}
-
-function readMsgFromCanvas_AVG(canvasid,pass,copy,blocksizepow,lim){
-    pass=(pass=== undefined)?'':pass;
-    copy=(copy=== undefined)?5:copy;
-    blocksizepow=(blocksizepow=== undefined)?3:blocksizepow;
-    blocksizepow=(blocksizepow<3)?3:blocksizepow;
-    lim=(lim=== undefined)?1:lim;
-    var c=document.getElementById(canvasid);
-    var ctx=c.getContext("2d");
-    var imgData=ctx.getImageData(0,0,c.width,c.height);
-    var SUMdata=fastSUM(imgData.data,c.width,c.height,blocksizepow);
-    var bitarray = extractBitArray_AVG(SUMdata,blocksizepow,lim);
-    //if (bitarray[1]) return null;
-    var msgArray=extractMsgArray_pass(bitarray,pass,copy);
+    var dctdata=(dct)?dctconvert(imgData.data,c.width,c.height):null;
+    var bitarray = (dct)?extractBitArraydct(dctdata,lim):extractBitArray(imgData);
+    var msgArray=(dct)?extractMsgArray_pass(bitarray,pass,copy):extractMsgArray_pass(bitarray,pass,1);
     if(msgArray==null) return null;
     return utf8Decode(msgArray);
 }
