@@ -1,15 +1,15 @@
 # CryptoStego  
-JS library for steganography with encryption - Hide text in an image with encryption and obfuscation. Support least significant bit mode and fast Fourier mode.    
+JS library for steganography with encryption - Hide text in an image with encryption and obfuscation. Support least significant bit mode and DCT mode.    
   
 ## Version  
-v1.3  
+v1.5  
   
 ## DEMO  
 [http://stego.js.org](http://stego.js.org)  
 **Note: Library needs HTML5 support!**  
    
 ## Download  
-Download [cryptostego.min.js](https://github.com/zeruniverse/CryptoStego/releases/download/v1.3/cryptostego.min.js)  
+Download [cryptostego.min.js](https://github.com/zeruniverse/CryptoStego/releases/download/v1.5/cryptostego.min.js)  
 **Note: This JS library needs HTML5 support!**  
   
 ## Features  
@@ -22,7 +22,7 @@ Download [cryptostego.min.js](https://github.com/zeruniverse/CryptoStego/release
   + Use least significant bits of RGB channels of each pixel to store message  
   + Resulting image is visually identical to original one  
   + Can only be stored in non-compressed format such as PNG  
-+ Fast Fourier mode
++ DCT (Discrete cosine transform) mode
   + Store information by slightly changing lowest frequency component of each block in frequency domain  
   + Robust to image compression but stores less data compared to LSB mode  
   + Resulting image looks different from original one  
@@ -70,9 +70,7 @@ This function writes your message into image in canvas `canvasid`. Before callin
 + `pass` specifies the password for retrieving the message. (default value is '')  
 + `mode` an integer specifies the steganography mode. [0-5]   
   + `0` -> LSB mode (default), result image looks identical to original image.  
-  + `1`, `2` -> fast Fourier mode, result image looks almost identical to original image. Mode `1` stores 19 copies of information and is stable under compression ratio `0.1`. But Mode `1` has very low data capacity.   
-  + `3` -> fast Fourier mode, result image looks like images with distortion.  
-  + `4`, `5` -> fast Fourier mode, high robustness with bad secrecy. Result image looks very different from original one  
+  + `1` - `5` -> DCT mode, higher value means better robustness to compression but the image looks more different from the original one.  
   + Generally, if you don't need image compression robustness, use mode `0`, otherwise, mode `2` and `3` are recommended.
   
 + Return value is either `null` or `1`, `null` stands for `fail` and `1` stands for `success`.  
@@ -85,8 +83,20 @@ This function reads your message from image in canvas `canvasid`. Before calling
   + `null` means fail to read message. It might caused by wrong password, wrong image or wrong parameters.  
   + returned string is the message retrieved. It might be some meaningless characters on error.  
   
-## Compression Robustness for fast Fourier mode  
-**Result below is from v1.0 with parameters similar to mode 3 in v1.3. v1.3 should give a better result thanks to algorithm improvement. In v1.3, mode 1 already has resistance to compression ratio 0.1**  
+## Advance Usage  
+
+`writeMsgToCanvas` and `readMsgFromCanvas` functions can be replaced by `writeMsgToCanvas_single(canvasid,msg,pass,dct,copy,lim)` and `readMsgFromCanvas_single(canvasid,pass,dct,copy,lim)`,
+which have the same effects but you can specify more parameters. `dct` is a boolean meaning whether DCT mode should be used. If `dct=true`, `copy` and `lim` will be considered by these two functions.
+
+`copy` means how many copies of this message should be stored. It's usually an odd integer so that as long as more than half of the data is correct, the result is correct. A high `copy` value means
+higher robustness but less data capacity.
+
+`lim` means how much difference between a bit '0' and a bit '1' should reflect on the image. Higher `lim` provides better robustness but the image will look more different from the original one.
+
+Refer to `main.js` for examples setting `copy` and `lim` parameters.
+
+## Compression Robustness for DCT  
+
 ### Raw image and data  
 Image before steganography (268KB in PNG format):  
 ![dandelionclock](https://cloud.githubusercontent.com/assets/4648756/15265727/6b29773e-1941-11e6-9245-3275ff0afcf2.jpg)  
@@ -102,48 +112,36 @@ BONJOUR LE MONDE!
 ПРИВЕТ МИР!
 ```
   
-### Compression Ratio 56.0% (150KB)  
-![result 3](https://cloud.githubusercontent.com/assets/4648756/15265750/1986efc8-1942-11e6-8f4e-754e4c221f62.jpg)  
-Retrieved data correct!  
+### Compression Ratio 9.4% (25.2KB)  
+![result 3](https://user-images.githubusercontent.com/4648756/30573644-0e8ffc94-9cc3-11e7-8157-f807db294a51.jpg)  
+Retrieved data correct for mode 2,3,4,5!  
   
-### Compression Ratio 25.8% (69.1KB)  
-![optimized-result 3](https://cloud.githubusercontent.com/assets/4648756/15265761/7e502a0a-1942-11e6-918e-f86fce06b001.jpg)  
-Retrieved data correct!  
-  
-### Compression Ratio 16.8% (44.9KB)  
-![result 3 1](https://cloud.githubusercontent.com/assets/4648756/15265783/5202b476-1943-11e6-921d-cbf1e1b76075.jpg)  
-Result:  
+### Compression Ratio 4.2% (11.2KB)  
+![optimized-result 3](https://user-images.githubusercontent.com/4648756/30573739-8d233670-9cc3-11e7-854a-0834869524e3.jpg)  
+Result for mode 3:
 ```
-你好，世界！
+你好，乖界！
 HELLO WORLD!
-¡HKL`MUODO!
-х阍٨اب诙عالم!
-BONJOUR LE MONDE!
-こ㊓ㅫメは世界！
-ПȠИВЕТ ܐ萠!
-```  
-Mostly correct!  
-  
-### Compression Ratio 10% (26.8KB)  
-![result 3 __1463194197_207 23 217 104](https://cloud.githubusercontent.com/assets/4648756/15265804/fc1d9c6e-1943-11e6-8325-6a5575447c8b.jpg)  
-Result:  
-```
-你祽，世界＃
-ōLO,׏RLD!
-áHόA mUNLG 
-معЭ記砘蘧لؙܧلمኂϊJOUr(Le MONDQc
+¡HOLA MUNDO!
+مرحبا بالعالم!
+BONJOUR LE0MONDE!
 こんにちは世界！
-ПРИВЕТ МИР!
-```  
-Half correct!  
-  
-### Compression Ratio 2.35% (6.3KB)  
-![result 3 __1463194357_207 23 217 104](https://cloud.githubusercontent.com/assets/4648756/15265818/7c9b7352-1944-11e6-9f32-3136fcdfb57d.jpg)  
-Result:  
+ПРИВЕТ МИР! 
 ```
-ERROR RETRIEVING MESSAGE
+
+Data retrieved correctly for mode 5 as compression ratio 4.2% 
+ 
+### Compression Ratio 1.5% (4.10KB)  
+![result 3 1](https://user-images.githubusercontent.com/4648756/30573930-a1495390-9cc4-11e7-9ac6-f0746898711c.jpg)  
+Result for mode 5:  
+```
+你好，世畄！
+HELLO WORLDኂሏLA MUNDK!
+مرحبا باɄعالم!BONJOUR LE MON@G 
+こんにちは世畈︁
+ПРИВՐ⠐쐘Р!
 ```  
-Corrupted!  
+
   
 ## Coding Example  
 See `example/` folder  
@@ -156,5 +154,5 @@ This project is under development. So you might encounter some problems while us
   
 ## Copyright  
 Jeffery Zhao  
-License: GNU **A**GPL v3.0 or later  
+License: GNU **A**GPL v3.0 or later (MIT License allowed for non-commercial purposes)  
 The copyright for Crypto-JS is reserved by its authors.  

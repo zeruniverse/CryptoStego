@@ -3,14 +3,12 @@
 function writeMsgToCanvas(canvasid,msg,pass,mode){
     mode=(mode=== undefined)?0:parseInt(mode);
     switch (mode) {
-        //case 1: return writeMsgToCanvas_block(canvasid,msg,pass,5,4,350); -NOT WORKING WELL
-        case 1: return writeMsgToCanvas_single(canvasid,msg,pass,true,19,3,160);
-        case 2: return writeMsgToCanvas_single(canvasid,msg,pass,true,5,3,160);
-        case 3: return writeMsgToCanvas_single(canvasid,msg,pass,true,5,2,80);
-        case 4: return writeMsgToCanvas_single(canvasid,msg,pass,true,9,2,350);
-        case 5: return writeMsgToCanvas_single(canvasid,msg,pass,true,3,3,1300);
+        case 1: return writeMsgToCanvas_single(canvasid,msg,pass,true,11,15);
+        case 2: return writeMsgToCanvas_single(canvasid,msg,pass,true,9,20);
+        case 3: return writeMsgToCanvas_single(canvasid,msg,pass,true,5,30);
+        case 4: return writeMsgToCanvas_single(canvasid,msg,pass,true,5,35);
+        case 5: return writeMsgToCanvas_single(canvasid,msg,pass,true,5,50);
         
-        //case : return writeMsgToCanvas_AVG(canvasid,msg,pass,3,2,300); --FAIL
         case 0:
         default: return writeMsgToCanvas_single(canvasid,msg,pass);
     }
@@ -21,13 +19,11 @@ function writeMsgToCanvas(canvasid,msg,pass,mode){
 function readMsgFromCanvas(canvasid,pass,mode){
     mode=(mode=== undefined)?0:parseInt(mode);
     switch (mode) {
-        //case 1: return readMsgFromCanvas_block(canvasid,pass,5,4,350); -NOT WORKING WELL
-        case 1: return readMsgFromCanvas_single(canvasid,pass,true,19,3,160);
-        case 2: return readMsgFromCanvas_single(canvasid,pass,true,5,3,160);
-        case 3: return readMsgFromCanvas_single(canvasid,pass,true,5,2,80);
-        case 4: return readMsgFromCanvas_single(canvasid,pass,true,9,2,350);
-        case 5: return readMsgFromCanvas_single(canvasid,pass,true,3,3,1300);
-        //case : return readMsgFromCanvas_AVG(canvasid,pass,3,2,300); --FAIL
+        case 1: return readMsgFromCanvas_single(canvasid,pass,true,11,15);
+        case 2: return readMsgFromCanvas_single(canvasid,pass,true,9,20);
+        case 3: return readMsgFromCanvas_single(canvasid,pass,true,5,30);
+        case 4: return readMsgFromCanvas_single(canvasid,pass,true,5,35);
+        case 5: return readMsgFromCanvas_single(canvasid,pass,true,5,50);
         case 0:
         default: return readMsgFromCanvas_single(canvasid,pass);
     }

@@ -23,12 +23,12 @@ function setbit(k){
     return (k%2==1)?k:k+1;
 }
 
-function fft_setbit(k,lim){
+function dct_setbit(k,lim){
     var tmp=Math.floor(k/lim);
     return (tmp%2==1)?tmp*lim:(tmp+1)*lim;
 }
 
-function fft_unsetbit(k,lim){
+function dct_unsetbit(k,lim){
     var tmp=Math.floor(k/lim);
     return (tmp%2==1)?(tmp-1)*lim:tmp*lim;
 }
@@ -72,112 +72,36 @@ function generate_pass(imgdatalength,information,pass,copy){
     return result;
 }
 
-function fastAVGSet(imgData,SUMdata,width,height,setarray,blocksizepow,lim){
+function dctset(imgData,dctdata,width,height,setarray,lim){
     function norm(a){
         a=Math.round(a);
         a=(a>255)?255:a;
         return (a<0)?0:a;
     }
-    var datalength=setarray.length;
-    var SUMdata1=Array();
-    SUMdata1 = SUMdata.slice(0);
-    for(var i=0;i<datalength;i++) {
-        SUMdata1[i]=(setarray[i])?fft_setbit(SUMdata1[i],lim):fft_unsetbit(SUMdata1[i],lim);
-    }
-    var blocksize= 1 << blocksizepow;
-    var w_ite=Math.floor(width/blocksize);
-    var h_ite=Math.floor(height/blocksize);
-    var result=Array();
-    var count=0;
-    for(var chann=0;chann<3;chann++)
-        for(var h=0;h<h_ite;h++)
-            for(var w=0;w<w_ite;w++)
-            {               
-                for(var i=0;i<blocksize;i++) for(var j=0;j<blocksize;j++){
-                    imgData[((h*blocksize+i)*width+w*blocksize+j)*4+chann]=norm(imgData[((h*blocksize+i)*width+w*blocksize+j)*4+chann]*(SUMdata1[count]/SUMdata[count]));
-                }
-                count++;
-            }
-    for (var i=0;i<imgData.length;i+=4)
-    {
-        imgData[i+3]=255;
-    }
-}
-
-function fftset(imgData,fftdata,width,height,setarray,blocksizepow,lim){
-    function norm(a){
-        a=Math.round(a);
-        a=(a>255)?255:a;
-        return (a<0)?0:a;
-    }
-    var fftdatalength=fftdata.length;
-    var datalength=setarray.length;
+    var dctdatalength=dctdata.length;
+    var datalength=setarray.length/3;
     for(var i=0;i<datalength;i++){
-        fftdata[i][0].real=(setarray[i])?fft_setbit(fftdata[i][0].real,lim):fft_unsetbit(fftdata[i][0].real,lim);
+		//Y 2-bit, Cr+Cb 1-bit
+        dctdata[i][0][0]=(setarray[i*3])?dct_setbit(dctdata[i][0][0],lim):dct_unsetbit(dctdata[i][0][0],lim);
+		dctdata[i][0][1]=(setarray[i*3+1])?dct_setbit(dctdata[i][0][1],lim):dct_unsetbit(dctdata[i][0][1],lim);
+		dctdata[i][0][2]=(setarray[i*3+2])?dct_setbit(dctdata[i][0][2],lim):dct_unsetbit(dctdata[i][0][2],lim);
     }
-    var blocksize= 1 << blocksizepow;
+    var blocksize= 8;
     var w_ite=Math.floor(width/blocksize);
     var h_ite=Math.floor(height/blocksize);
     var result=Array();
     var count=0;
-    for(var chann=0;chann<3;chann++)
-        for(var h=0;h<h_ite;h++)
-            for(var w=0;w<w_ite;w++)
-            {
-                var tmp=imageFFT(fftdata[count], blocksize, blocksize,true);               
-                for(var i=0;i<blocksize;i++) for(var j=0;j<blocksize;j++){
-                    imgData[((h*blocksize+i)*width+w*blocksize+j)*4+chann]=norm(tmp[i*blocksize+j].real);
-                }
-                count++;
+    for(var h=0;h<h_ite;h++)
+        for(var w=0;w<w_ite;w++)
+        {
+            var tmp=imagedct(dctdata[count],true);               
+            for(var i=0;i<blocksize;i++) for(var j=0;j<blocksize;j++){
+				var rgb = ycbcrtorgb(tmp[i*blocksize+j][0],tmp[i*blocksize+j][1],tmp[i*blocksize+j][2]);
+				for(var chann=0;chann<3;chann++)
+					imgData[((h*blocksize+i)*width+w*blocksize+j)*4+chann]=norm(rgb[chann]);
             }
-    for (var i=0;i<imgData.length;i+=4)
-    {
-        imgData[i+3]=255;
-    }
-}
-
-function fftset_block(imgData,fftdata,width,height,setarray,blocksizepow,lim){
-    function norm(a){
-        a=Math.round(a);
-        a=(a>255)?255:a;
-        return (a<0)?0:a;
-    }
-    function setbitdata(fftdata,arrayloc,objloc,setval,lim){
-        var len = Math.sqrt(Math.pow(fftdata[arrayloc][objloc].real,2)+Math.pow(fftdata[arrayloc][objloc].imag,2));
-        var distlen = (setval)?fft_setbit(len,lim):fft_unsetbit(len,lim);
-        distlen=(distlen>=0)?distlen:0;
-        //fftdata[arrayloc][objloc].real=(setval)?fft_setbit(fftdata[arrayloc][objloc].real,lim):fft_unsetbit(fftdata[arrayloc][objloc].real,lim)
-        fftdata[arrayloc][objloc].real=(distlen/len)*fftdata[arrayloc][objloc].real;
-        fftdata[arrayloc][objloc].imag=(distlen/len)*fftdata[arrayloc][objloc].imag;
-    }
-    var datalength=setarray.length;
-    var blocksize= 1 << blocksizepow;
-    var count=0;
-    for(var i=0;i<datalength;i++){
-        //write data to top-left 2*2 block of each FFT matrix except [0].
-        //[1,1] is not stable, drop it.
-        var matrixloc = count % 2;
-        var arrayloc = Math.floor(count / 2);
-        var matrixrow = Math.floor(matrixloc / 2);
-        var matrixcol = matrixloc % 2;
-        if(matrixrow==0&&matrixcol==0) {matrixrow=1;matrixcol=0;}
-        setbitdata(fftdata,arrayloc,matrixrow*blocksize+matrixcol,setarray[i],lim);
-        count = count+1;
-    }
-    var w_ite=Math.floor(width/blocksize);
-    var h_ite=Math.floor(height/blocksize);
-    var result=Array();
-    count=0;
-    for(var chann=0;chann<3;chann++)
-        for(var h=0;h<h_ite;h++)
-            for(var w=0;w<w_ite;w++)
-            {
-                var tmp=imageFFT(fftdata[count], blocksize, blocksize,true);               
-                for(var i=0;i<blocksize;i++) for(var j=0;j<blocksize;j++){
-                    imgData[((h*blocksize+i)*width+w*blocksize+j)*4+chann]=norm(tmp[i*blocksize+j].real);
-                }
-                count++;
-            }
+            count++;
+        }
     for (var i=0;i<imgData.length;i+=4)
     {
         imgData[i+3]=255;
@@ -186,61 +110,19 @@ function fftset_block(imgData,fftdata,width,height,setarray,blocksizepow,lim){
 
 //Write msg to the image in canvasid.
 //Return: null - fail. 1 - successful
-function writeMsgToCanvas_single(canvasid,msg,pass,fft,copy,blocksizepow,lim){
-    fft=(fft === undefined)?false:fft;
+function writeMsgToCanvas_single(canvasid,msg,pass,dct,copy,lim){
+    dct=(dct === undefined)?false:dct;
     pass=(pass=== undefined)?'':pass;
     copy=(copy=== undefined)?5:copy;
-    blocksizepow=(blocksizepow=== undefined)?2:blocksizepow;
-    lim=(lim=== undefined)?80:lim;
+    lim=(lim=== undefined)?30:lim;
     var c=document.getElementById(canvasid);
     var ctx=c.getContext("2d");
     var imgData=ctx.getImageData(0,0,c.width,c.height);
-    var fftdata=(fft)?fftconvert(imgData.data,c.width,c.height,blocksizepow):null;
-    var blocksize= 1 << blocksizepow;
-    var datalength=(fft)?fftdata.length:Math.floor(imgData.data.length/4)*3;
-    var setarray = (fft)?generate_pass(datalength,msg,pass,copy):generate_pass(datalength,msg,pass,1);
+    var dctdata=(dct)?dctconvert(imgData.data,c.width,c.height):null;
+    var datalength=(dct)?dctdata.length*3:Math.floor(imgData.data.length/4)*3;
+    var setarray = (dct)?generate_pass(datalength,msg,pass,copy):generate_pass(datalength,msg,pass,1);
     if(setarray==null) return null;
-    (fft)?fftset(imgData.data,fftdata,c.width,c.height,setarray,blocksizepow,lim):setimgdata(imgData,setarray);
-    ctx.putImageData(imgData,0,0);
-    return 1;
-}
-
-//block version fft
-//Write msg to the image in canvasid.
-//Return: null - fail. 1 - successful
-function writeMsgToCanvas_block(canvasid,msg,pass,copy,blocksizepow,lim){
-    pass=(pass=== undefined)?'':pass;
-    copy=(copy=== undefined)?5:copy;
-    blocksizepow=(blocksizepow=== undefined)?3:blocksizepow;
-    blocksizepow=(blocksizepow<3)?3:blocksizepow;
-    lim=(lim=== undefined)?1:lim;
-    var c=document.getElementById(canvasid);
-    var ctx=c.getContext("2d");
-    var imgData=ctx.getImageData(0,0,c.width,c.height);
-    var fftdata=fftconvert(imgData.data,c.width,c.height,blocksizepow);
-    var blocksize= 1 << blocksizepow;
-    var datalength=Math.floor(fftdata.length*2);
-    var setarray = generate_pass(datalength,msg,pass,copy);
-    if(setarray==null) return null;
-    fftset_block(imgData.data,fftdata,c.width,c.height,setarray,blocksizepow,lim);
-    ctx.putImageData(imgData,0,0);
-    return 1;
-}
-
-function writeMsgToCanvas_AVG(canvasid,msg,pass,copy,blocksizepow,lim){
-    pass=(pass=== undefined)?'':pass;
-    copy=(copy=== undefined)?5:copy;
-    blocksizepow=(blocksizepow=== undefined)?3:blocksizepow;
-    lim=(lim=== undefined)?50:lim;
-    var c=document.getElementById(canvasid);
-    var ctx=c.getContext("2d");
-    var imgData=ctx.getImageData(0,0,c.width,c.height);
-    var SUMdata=fastSUM(imgData.data,c.width,c.height,blocksizepow);
-    var blocksize= 1 << blocksizepow;
-    var datalength=SUMdata.length;
-    var setarray = generate_pass(datalength,msg,pass,copy);
-    if(setarray==null) return null;
-    fastAVGSet(imgData.data,SUMdata,c.width,c.height,setarray,blocksizepow,lim)
+    (dct)?dctset(imgData.data,dctdata,c.width,c.height,setarray,lim):setimgdata(imgData,setarray);
     ctx.putImageData(imgData,0,0);
     return 1;
 }

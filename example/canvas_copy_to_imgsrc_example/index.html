@@ -99,148 +99,50 @@
 <script type="text/javascript" src="javascripts/setimg.js"></script>
 <script type="text/javascript" src="javascripts/main.js"></script>
 <!-- above scripts equivalent to <script type="text/javascript" src="cryptostego.min.js"></script>-->
-<script type="text/javascript" src="javascripts/lzma.js"></script>
 <script type="text/javascript">
-    var my_lzma = new LZMA("javascripts/lzma_worker.js");
-    var resultimg = $("#resultimg"),
-            logdiv = $("#result"),
-            Base64 = new Base64_Encodearr();
-    cbstr = "";
-    var x;
-    function log(msg) {
-        logdiv.html(msg);
-    }
-
-    function Base64_Encodearr() {
-        var c = [], b = 0, a = 0, g = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=".split("");
-        this.encode = function (array) {
-            var len = array.length;
-            for (var i = 0; len > i; i++)this.$(array[0 + i])
-            for (0 !== b % 4 && (c[b++] = g[a]); 0 !== b % 4;)c[b++] = g[64];
-            c = c.join("");
-            var result = c;
-            c = [];
-            b = 0;
-            a = 0;
-            return result;
-        };
-        this.$ = function (h) {
-            h &= 255;
-            0 == b % 4 ? (c[b] = g[h >>> 2], a = (h & 3) << 4) :
-                    1 == b % 4 ? (c[b] = g[a | h >>> 4], a = (h & 15) << 2) : (c[b] = g[a | h >>> 6], b++, c[b] = g[h & 63], a = 0);
-            b++
-        };
-    }
-
-    function writeIMG() {
-        resultimg.hide();
-        resultimg.attr('src', '');
-        log('Processing...');
-        function lenmin(str, bstr) {
-            var realLength = 0, len = str.length, charCode = -1;
-            for (var i = 0; i < len; i++) {
-                charCode = str.charCodeAt(i);
-                if (charCode >= 0 && charCode <= 128) realLength += 1;
-                else realLength += 3;
-            }
-            return (bstr.length > realLength) ? str : bstr;
+function writeIMG(){
+    $("#resultimg").hide();
+    $("#resultimg").attr('src','');
+    $("#result").html('Processing...');
+    function writefunc(){
+        var selectedVal = '';
+        var selected = $("input[type='radio'][name='mode']:checked");
+        if (selected.length > 0) {
+            selectedVal = selected.val();
         }
-
-        var str = $("#msg").val();
-        my_lzma.compress(str == "" ? " " : str, 9, function (result) {
-            var len = result.length;
-            for (var i = 0; i < len; ++i) {
-                if (result[i] < 0) {
-                    result[i] = result[i] + 256;
-                }
-            }
-            cbstr = Base64.encode(result);
-            loadIMGtoCanvas('file', 'canvas', writefunc, 500);
-        }, function (percent) {
-            log("Compressing... " + Math.round(percent * 100) + "%. Please Wait..")
-        });
-
-        function writefunc() {
-            var selectedVal = '';
-            var selected = $("input[type='radio'][name='mode']:checked");
-            if (selected.length > 0) {
-                selectedVal = selected.val();
-            }
-            var t = writeMsgToCanvas('canvas', lenmin(str, cbstr), $("#pass").val(), selectedVal);
-            if (t != null) {
-                var myCanvas = document.getElementById("canvas");
-                var image = myCanvas.toDataURL("image/png");
-                resultimg.attr('src', image);
-                log('Success! Save the result image below and send it to others!');
-                resultimg.show();
-            }
+        var t = writeMsgToCanvas('canvas',$("#msg").val(),$("#pass").val(),selectedVal);
+        if(t!=null){ 
+            var myCanvas = document.getElementById("canvas");  
+            var image = myCanvas.toDataURL("image/png");    
+            $("#resultimg").attr('src',image);
+            $("#result").html('Success! Save the result image below and send it to others!');
+            $("#resultimg").show();
         }
     }
-
-    function stringToBytes(str) {
-        var ch, st, re = [];
-        for (var i = 0; i < str.length; i++) {
-            ch = str.charCodeAt(i);  // get char
-            st = [];                 // set up "stack"
-            do {
-                st.push(ch & 0xFF);  // push byte to stack
-                ch = ch >> 8;          // shift value down by 1 byte
-            }
-            while (ch);
-            // add stack contents to result
-            // done because chars have "wrong" endianness
-            re = re.concat(st.reverse());
+    loadIMGtoCanvas('file','canvas',writefunc,500);
+}
+function readIMG(){
+    $("#resultimg").hide();
+    $("#result").html('Processing...');
+    function readfunc(){
+        var selectedVal = '';
+        var selected = $("input[type='radio'][name='mode']:checked");
+        if (selected.length > 0) {
+            selectedVal = selected.val();
         }
-        // return an array of bytes
-        return re;
+        var t= readMsgFromCanvas('canvas',$("#pass").val(),selectedVal);
+        if(t!=null){
+            t=t.split('&').join('&amp;');
+            t=t.split(' ').join('&nbsp;'); 
+            t=t.split('<').join('&lt;');
+            t=t.split('>').join('&gt;');
+            t=t.replace(/(?:\r\n|\r|\n)/g, '<br />');
+            $("#result").html(t);
+        }else $("#result").html('ERROR REAVEALING MESSAGE!');
+             
     }
-
-    function readIMG() {
-        resultimg.hide();
-        log('Processing...');
-        function unlzma(str) {
-            my_lzma.decompress(stringToBytes(atob(str)), function (result) {
-                if (result === false) {
-                    alert("An error occurred during decompression.");
-                    log(str);
-                    return;
-                }
-                replacehtmltag(result);
-            }, function progress(percent) {
-                log("Decompressing..." + (percent === -1 ? "" : Math.round(percent * 100) + "%"));
-            });
-        }
-
-        function readfunc() {
-            var selectedVal = '';
-            var selected = $("input[type='radio'][name='mode']:checked");
-            if (selected.length > 0) {
-                selectedVal = selected.val();
-            }
-            var t = readMsgFromCanvas('canvas', $("#pass").val(), selectedVal);
-            if (t != null) {
-                //if(t.test(/[A-Za-z0-9\+\/]/g))
-                var r = /[A-Za-z0-9+\/]*\={0,2}/;
-                if (r.test(t) && (t.match(r)[0].length) % 4 == 0) {
-                    unlzma(t);
-                } else {
-                    replacehtmltag(t);
-                }
-            } else {
-                log('ERROR REAVEALING MESSAGE!');
-            }
-        }
-
-        loadIMGtoCanvas('file', 'canvas', readfunc);
-    }
-    function replacehtmltag(str) {
-        str = str.split('&').join('&amp;');
-        str = str.split(' ').join('&nbsp;');
-        str = str.split('<').join('&lt;');
-        str = str.split('>').join('&gt;');
-        str = str.replace(/(?:\r\n|\r|\n)/g, '<br />');
-        log(str);
-    }
+    loadIMGtoCanvas('file','canvas',readfunc);
+}
 </script>
 
   </body>
