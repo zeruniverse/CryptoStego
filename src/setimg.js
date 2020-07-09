@@ -26,12 +26,18 @@ function write_dct_y(channel_data, channel_width, channel_length, setdata, multi
     var row_block = Math.floor(channel_length / 8);
     var col_block = Math.floor(channel_width / 8);
     var num_block_bits = loc.length;
-    if(num_block_bits * row_block * col_block != setdata.length) throw "Image size does not match data size (Y channel)";
+    if( num_block_bits * (row_block * col_block - 1)!= setdata.length) throw "Image size does not match data size (Y channel)";
+    var reference_dct_block;
 
     for(var i=0; i<row_block; i++) for(var j=0; j<col_block; j++){
         var block_y = extract_block(channel_data, 8, i*8, j*8, channel_width);
         var dct_y = dct(block_y);
-        var qdiff = quantize_diff(multiply, loc, dct_y, setdata.slice(num_block_bits * (i*col_block + j), num_block_bits * (i*col_block + j + 1)));
+        if (i==0 && j==0){
+            reference_dct_block = dct_y;
+            continue;
+        }
+        var dct_diff = dct_y.map(function (num, idx) {return num - reference_dct_block[idx];});
+        var qdiff = quantize_diff(multiply, loc, dct_diff, setdata.slice(num_block_bits * (i*col_block + j - 1), num_block_bits * (i*col_block + j)));
         dct_y = dct_y.map(function (num, idx) {return num + qdiff[idx];});
         block_y = idct(dct_y);
         //replace original block with stego Y
@@ -53,13 +59,19 @@ function write_dct_CbCr(channel_data, channel_width, channel_length, setdata, mu
     var row_block = Math.floor(channel_length / 16);
     var col_block = Math.floor(channel_width / 16);
     var num_block_bits = loc.length;
-    if(num_block_bits * row_block * col_block != setdata.length) throw "Image size does not match data size (Y channel)";
+    if( num_block_bits * (row_block * col_block - 1) != setdata.length) throw "Image size does not match data size (CbCr channel)";
+    var reference_dct_block;
 
     for(var i=0; i<row_block; i++) for(var j=0; j<col_block; j++){
         var block_y = extract_block(channel_data, 16, i*16, j*16, channel_width);
-        block_y_8x8 = img_16x16_to_8x8(block_y);
+        var block_y_8x8 = img_16x16_to_8x8(block_y);
         var dct_y = dct(block_y_8x8);
-        var qdiff = quantize_diff(multiply, loc, dct_y, setdata.slice(num_block_bits * (i*col_block + j), num_block_bits * (i*col_block + j + 1)));
+        if (i==0 && j==0){
+            reference_dct_block = dct_y;
+            continue;
+        }
+        var dct_diff = dct_y.map(function (num, idx) {return num - reference_dct_block[idx];});
+        var qdiff = quantize_diff(multiply, loc, dct_diff, setdata.slice(num_block_bits * (i*col_block + j - 1), num_block_bits * (i*col_block + j)));
         dct_y = dct_y.map(function (num, idx) {return num + qdiff[idx];});
         var block_y_stego = idct(dct_y);
         var stego_diff = block_y_stego.map(function (num, idx) {return num - block_y_8x8[idx];});
@@ -92,9 +104,9 @@ function write_lsb(imgData,setdata) {
 }
 
 function dct_data_capacity(channel_width, channel_length, loc, use_y, use_downsampling){
-    var y_data_len = (use_y)?Math.floor(channel_length / 8) * Math.floor(channel_width / 8) * loc.length : 0;
+    var y_data_len = (use_y)?(Math.floor(channel_length / 8) * Math.floor(channel_width / 8) - 1)* loc.length : 0;
     var cblock = (use_downsampling)? 16 : 8;
-    var cbcr_data_len = Math.floor(channel_length / cblock) * Math.floor(channel_width / cblock) * loc.length;
+    var cbcr_data_len = (Math.floor(channel_length / cblock) * Math.floor(channel_width / cblock) - 1) * loc.length;
     return [y_data_len, cbcr_data_len];
 }
 

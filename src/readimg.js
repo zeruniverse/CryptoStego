@@ -35,11 +35,17 @@ function get_dct_y(channel_data, channel_width, channel_length, multiply, loc){
     var col_block = Math.floor(channel_width / 8);
     var num_block_bits = loc.length;
     var result=Array();
+    var reference_dct_block;
 
     for(var i=0; i<row_block; i++) for(var j=0; j<col_block; j++){
         var block_y = extract_block(channel_data, 8, i*8, j*8, channel_width);
         var dct_y = dct(block_y);
-        result.push(get_bit_from_quantized(multiply, loc, dct_y))
+        if(i==0 && j==0){
+            reference_dct_block = dct_y;
+            continue;
+        }
+        result.push(get_bit_from_quantized(multiply, loc,
+            dct_y.map(function (num, idx) {return num - reference_dct_block[idx];})));
     }
 
     return [].concat.apply([], result);
@@ -61,12 +67,18 @@ function get_dct_CbCr(channel_data, channel_width, channel_length, multiply, loc
     var col_block = Math.floor(channel_width / 16);
     var num_block_bits = loc.length;
     var result=Array();
+    var reference_dct_block;
 
     for(var i=0; i<row_block; i++) for(var j=0; j<col_block; j++){
         var block_y = extract_block(channel_data, 16, i*16, j*16, channel_width);
         block_y = img_16x16_to_8x8(block_y);
         var dct_y = dct(block_y);
-        result.push(get_bit_from_quantized(multiply, loc, dct_y))
+        if(i==0 && j==0){
+            reference_dct_block = dct_y;
+            continue;
+        }
+        result.push(get_bit_from_quantized(multiply, loc,
+            dct_y.map(function (num, idx) {return num - reference_dct_block[idx];})));
     }
     return [].concat.apply([], result);
 }
