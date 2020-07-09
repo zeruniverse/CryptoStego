@@ -1,39 +1,85 @@
-function bitconvert(str)
-{
-    var utf8array=utf8Encode(str);
-    var result=Array();
-    var utf8strlen=utf8array.length;
-    for(var i=0;i<utf8strlen;i++){
-        for(var j=128; j>0; j=Math.floor(j/2))
-        {
-            if(Math.floor(utf8array[i]/j))
-            {
-                result.push(true);
-                utf8array[i] -=j;
-            }else result.push(false);
-        }
+function prepare_write_data(data_bits, enc_key, encode_len){
+    var data_bits_len = data_bits.length;
+    if(data_bits.length > encode_len) throw "Can not hold this many data!";
+    var result=Array(encode_len);
+    for(var i=0; i<encode_len; i++){
+        result[i] = Math.floor(Math.random()*2); //obfuscation
     }
+
+    var order = get_hashed_order(enc_key, encode_len);
+    for(var i=0; i<data_bits_len; i++) result[order[i]] = data_bits[i];
+
     return result;
 }
-function unsetbit(k){
-    return (k%2==1)?k-1:k;
+
+function write_dct_y(channel_data, channel_width, channel_length, setdata, multiply, loc){
+    /* write a DCT manipulated Y channel from original Y channel
+    Input:
+        channel_data (1D array of size (channel_width * channel_length)): original Y data
+        channel_width (int): channel width
+        channel_length (int): channel length
+        setdata (1D array of bits 0/1 array): data to stego
+        multiply (int): int for Q matrix to be multiplied
+        loc (1D array of int): which location on block to stego on.
+    */
+
+    var row_block = Math.floor(channel_length / 8);
+    var col_block = Math.floor(channel_width / 8);
+    var num_block_bits = loc.length;
+    if(num_block_bits * row_block * col_block != setdata.length) throw "Image size does not match data size (Y channel)";
+
+    for(var i=0; i<row_block; i++) for(var j=0; j<col_block; j++){
+        var block_y = extract_block(channel_data, 8, i*8, j*8, channel_width);
+        var dct_y = dct(block_y);
+        var qdiff = quantize_diff(multiply, loc, dct_y, setdata.slice(num_block_bits * (i*col_block + j), num_block_bits * (i*col_block + j + 1)));
+        dct_y = dct_y.map(function (num, idx) {return num + qdiff[idx];});
+        block_y = idct(dct_y);
+        //replace original block with stego Y
+        replace_block(channel_data, 8, i*8, j*8, channel_width, block_y);
+    }
 }
 
-function setbit(k){
-    return (k%2==1)?k:k+1;
+function write_dct_CbCr(channel_data, channel_width, channel_length, setdata, multiply, loc){
+    /* get a DCT manipulated Cb or Cr channel from original channel
+    Input:
+        channel_data (1D array of size (channel_width * channel_length)): original CbCr data
+        channel_width (int): channel width
+        channel_length (int): channel length
+        setdata (1D array of bits 0/1 array): data to stego
+        multiply (int): int for Q matrix to be multiplied
+        loc (1D array of int): which location on block to stego on.
+    */
+
+    var row_block = Math.floor(channel_length / 16);
+    var col_block = Math.floor(channel_width / 16);
+    var num_block_bits = loc.length;
+    if(num_block_bits * row_block * col_block != setdata.length) throw "Image size does not match data size (Y channel)";
+
+    for(var i=0; i<row_block; i++) for(var j=0; j<col_block; j++){
+        var block_y = extract_block(channel_data, 16, i*16, j*16, channel_width);
+        block_y_8x8 = img_16x16_to_8x8(block_y);
+        var dct_y = dct(block_y_8x8);
+        var qdiff = quantize_diff(multiply, loc, dct_y, setdata.slice(num_block_bits * (i*col_block + j), num_block_bits * (i*col_block + j + 1)));
+        dct_y = dct_y.map(function (num, idx) {return num + qdiff[idx];});
+        var block_y_stego = idct(dct_y);
+        var stego_diff = block_y_stego.map(function (num, idx) {return num - block_y_8x8[idx];});
+        stego_diff = img_8x8_to_16x16(stego_diff);
+        block_y = block_y.map(function (num, idx) {return num + stego_diff[idx];});
+
+        //replace original block with stego Y
+        replace_block(channel_data, 16, i*16, j*16, channel_width, block_y);
+    }
 }
 
-function dct_setbit(k,lim){
-    var tmp=Math.floor(k/lim);
-    return (tmp%2==1)?tmp*lim:(tmp+1)*lim;
-}
 
-function dct_unsetbit(k,lim){
-    var tmp=Math.floor(k/lim);
-    return (tmp%2==1)?(tmp-1)*lim:tmp*lim;
-}
+function write_lsb(imgData,setdata) {
+    function unsetbit(k){
+        return (k%2==1)?k-1:k;
+    }
 
-function setimgdata(imgData,setdata) {
+    function setbit(k){
+        return (k%2==1)?k:k+1;
+    }
     var j=0;
     for (var i=0;i<imgData.data.length;i+=4)
     {
@@ -45,84 +91,104 @@ function setimgdata(imgData,setdata) {
     }
 }
 
-function initialize(length){ //set bit1, bit2 so we can have at most 4 modes.  //May. 14, 2016 -- Don't let people know the mode. Don't set it.
-    result=Array();
-    for(var i=0; i<length; i++){
-        result.push((Math.floor(Math.random()*2))?true:false); //obfuscation
-    }
-    return result;
+function dct_data_capacity(channel_width, channel_length, loc, use_y, use_downsampling){
+    var y_data_len = (use_y)?Math.floor(channel_length / 8) * Math.floor(channel_width / 8) * loc.length : 0;
+    var cblock = (use_downsampling)? 16 : 8;
+    var cbcr_data_len = Math.floor(channel_length / cblock) * Math.floor(channel_width / cblock) * loc.length;
+    return [y_data_len, cbcr_data_len];
 }
 
-function generate_pass(imgdatalength,information,pass,copy){
-    var info=bitconvert(information);
-    if ((info.length+24)*copy>imgdatalength) {alert('TEXT TOO LONG!'); return null;}
-    var result=initialize(imgdatalength);
-    var infolen=info.length;
-    pass=String(CryptoJS.SHA512(pass));
-    var taken=Array();
-    var modval=imgdatalength;
-    for(var i=0;i<infolen;i++) for(var j=0;j<copy;j++) {
-        result[gethashval(pass,modval,taken)]=info[i];
-        pass=String(CryptoJS.SHA512(pass));
-    }
-    for(var j=0;j<24;j++) for(var i=0;i<copy;i++) {
-        result[gethashval(pass,modval,taken)]=true;
-        pass=String(CryptoJS.SHA512(pass));
-    }
-    return result;
-}
+function write_dct(imgData, channel_width, channel_length, setdata, multiply, loc, use_y, use_downsampling){
+    /* Write Stego to imgData using DCT
+    Input:
+        imgData: to manipulate
+        channel_width (int): channel width
+        channel_length (int): channel length
+        setdata (1D array of bits 0/1 array): data to stego
+        multiply (int): int for Q matrix to be multiplied
+        loc (1D array of int): which location on block to stego on.
+        use_y (bool): whether to manipulate y channel
+        use_downsampling (bool): whether to downsample on CrCb
+    */
+    var data_capacity = dct_data_capacity(channel_width, channel_length, loc, use_y, use_downsampling);
+    var y_data_len = data_capacity[0];
+    var cbcr_data_len = data_capacity[1];
 
-function dctset(imgData,dctdata,width,height,setarray,lim){
-    function norm(a){
-        a=Math.round(a);
-        a=(a>255)?255:a;
-        return (a<0)?0:a;
-    }
-    var dctdatalength=dctdata.length;
-    var datalength=setarray.length/3;
-    for(var i=0;i<datalength;i++){
-		//Y 2-bit, Cr+Cb 1-bit
-        dctdata[i][0][0]=(setarray[i*3])?dct_setbit(dctdata[i][0][0],lim):dct_unsetbit(dctdata[i][0][0],lim);
-		dctdata[i][0][1]=(setarray[i*3+1])?dct_setbit(dctdata[i][0][1],lim):dct_unsetbit(dctdata[i][0][1],lim);
-		dctdata[i][0][2]=(setarray[i*3+2])?dct_setbit(dctdata[i][0][2],lim):dct_unsetbit(dctdata[i][0][2],lim);
-    }
-    var blocksize= 8;
-    var w_ite=Math.floor(width/blocksize);
-    var h_ite=Math.floor(height/blocksize);
-    var result=Array();
-    var count=0;
-    for(var h=0;h<h_ite;h++)
-        for(var w=0;w<w_ite;w++)
-        {
-            var tmp=imagedct(dctdata[count],true);               
-            for(var i=0;i<blocksize;i++) for(var j=0;j<blocksize;j++){
-				var rgb = ycbcrtorgb(tmp[i*blocksize+j][0],tmp[i*blocksize+j][1],tmp[i*blocksize+j][2]);
-				for(var chann=0;chann<3;chann++)
-					imgData[((h*blocksize+i)*width+w*blocksize+j)*4+chann]=norm(rgb[chann]);
-            }
-            count++;
-        }
-    for (var i=0;i<imgData.length;i+=4)
+    var y=Array(), cb=Array(), cr=Array();
+    for (var i=0;i<imgData.data.length;i+=4)
     {
-        imgData[i+3]=255;
+        var ycbcr = rgb2ycbcr(imgData.data[i],imgData.data[i+1],imgData.data[i+2]);
+        y.push(ycbcr[0]);
+        cb.push(ycbcr[1]);
+        cr.push(ycbcr[2]);
     }
+    if(use_y) write_dct_y(y, channel_width, channel_length, setdata.slice(0, y_data_len), multiply, loc);
+    var cbcr_func = (use_downsampling)?write_dct_CbCr : write_dct_y;
+
+    cbcr_func(cb, channel_width, channel_length, setdata.slice(y_data_len, y_data_len + cbcr_data_len), multiply, loc);
+    cbcr_func(cr, channel_width, channel_length,
+        setdata.slice(y_data_len + cbcr_data_len, y_data_len + cbcr_data_len + cbcr_data_len), multiply, loc);
+    var j=0;
+    for (var i=0;i<imgData.data.length;i+=4)
+    {
+        var rgb = ycbcr2rgb(y[j], cb[j], cr[j]);
+        imgData.data[i] = rgbclip(rgb[0]);
+        imgData.data[i+1] = rgbclip(rgb[1]);
+        imgData.data[i+2] = rgbclip(rgb[2]);
+        j+=1;
+    }
+
 }
 
-//Write msg to the image in canvasid.
-//Return: null - fail. 1 - successful
-function writeMsgToCanvas_single(canvasid,msg,pass,dct,copy,lim){
-    dct=(dct === undefined)?false:dct;
-    pass=(pass=== undefined)?'':pass;
-    copy=(copy=== undefined)?5:copy;
-    lim=(lim=== undefined)?30:lim;
-    var c=document.getElementById(canvasid);
-    var ctx=c.getContext("2d");
-    var imgData=ctx.getImageData(0,0,c.width,c.height);
-    var dctdata=(dct)?dctconvert(imgData.data,c.width,c.height):null;
-    var datalength=(dct)?dctdata.length*3:Math.floor(imgData.data.length/4)*3;
-    var setarray = (dct)?generate_pass(datalength,msg,pass,copy):generate_pass(datalength,msg,pass,1);
-    if(setarray==null) return null;
-    (dct)?dctset(imgData.data,dctdata,c.width,c.height,setarray,lim):setimgdata(imgData,setarray);
-    ctx.putImageData(imgData,0,0);
-    return 1;
+// main function
+function writeMsgToCanvas_base(canvasid, msg, enc_key, use_dct, num_copy, multiply, loc, use_y, use_downsampling){
+    /* Write message to canvas
+    Input:
+        canvasid: Canvas ID to read/write data
+        msg (string): message to stego
+        enc_key (string): encryption key for msg
+        use_dct (bool): use true for DCT, false for LSB
+        num_copy (int): how many copies of each bit to write into image. Larger value is more robust but reduces capacity.
+
+        -- below only valid for use_dct=true --
+
+
+        multiply (int): int for Q matrix to be multiplied
+        loc (1D array of int): which location on block to stego on.
+        use_y (bool): whether to manipulate y channel
+        use_downsampling(bool): whether to downsample on CrCb
+    Output:
+        isSuccess: === true: success, otherwise, a string with error message.
+    */
+
+    use_dct=(use_dct === undefined)?false:use_dct;
+    enc_key=(enc_key === undefined)?'':enc_key;
+    num_copy=(num_copy === undefined)?5:num_copy;
+    multiply=(multiply=== undefined)?30:multiply;
+    loc=(loc === undefined)? [1,2,8,9,10,16,17]:loc;
+    use_y=(use_y === undefined) ? true: use_y;
+    use_downsampling=(use_downsampling === undefined) ? true: use_downsampling;
+
+    try{
+        var c=document.getElementById(canvasid);
+        var ctx=c.getContext("2d");
+        var imgData=ctx.getImageData(0,0,c.width,c.height);
+
+        var encode_len = Math.floor(imgData.data.length / 4) * 3;
+        if(use_dct){
+            var cap = dct_data_capacity(c.width, c.height, loc, use_y, use_downsampling);
+            encode_len = cap[0] + 2 * cap[1];
+        }
+        // prepare data
+        var bit_stream = str_to_bits(msg, num_copy);
+        bit_stream = prepare_write_data(bit_stream, enc_key, encode_len);
+        if(use_dct){
+            write_dct(imgData, c.width, c.height, bit_stream, multiply, loc, use_y, use_downsampling);
+        } else write_lsb(imgData, bit_stream);
+        ctx.putImageData(imgData,0,0);
+        return true;
+    }
+    catch(err){
+        return err;
+    }
 }
