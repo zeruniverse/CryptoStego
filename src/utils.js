@@ -12,7 +12,7 @@ function get_hashed_order(password, arr_len){
     // O(arr_len) algorithm
 
     var prime_num = 13103574579095113781;
-    var orders = [...Array(arr_len).keys()];
+    var orders = Array.from(Array(arr_len).keys());
     password=String(CryptoJS.SHA512(password));
     var password_len = password.length;
     var result = [];
