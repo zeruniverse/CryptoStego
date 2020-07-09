@@ -32,7 +32,6 @@
 <a id="how-to-use" class="anchor" href="#how-to-use" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Introduction</h3>
 
 <p>This JS library provides functions to load image from file input into canvas, write message to image in canvas and read message from image in canvas.</p>
-<p>Visit <a href='https://github.com/zeruniverse/CryptoStego'>project homepage</a> for more details about this library.
 <p>Below is a simple example showing how the library works!</p>
 
 <h3>
@@ -43,7 +42,7 @@
 <h4 style="color:blue">Step2. Choose a robustness level below</h4>
 <div><p>
   <p><label for="m0"><input type="radio" name="mode" id="m0" value=0 checked="checked" /> Level 0 - Best Secrecy, No Robustness to Compression</label></p>
-  <p><label for="m1"><input type="radio" name="mode" id="m1" value=1 /> Level 1 - (Warning: This level has very low data capacity)</label></p>
+  <p><label for="m1"><input type="radio" name="mode" id="m1" value=1 /> Level 1</label></p>
   <p><label for="m2"><input type="radio" name="mode" id="m2" value=2 /> Level 2</label></p>
   <p><label for="m3"><input type="radio" name="mode" id="m3" value=3 /> Level 3</label></p>
   <p><label for="m4"><input type="radio" name="mode" id="m4" value=4 /> Level 4</label></p>
@@ -92,17 +91,7 @@
     </div>
 
 <script type="text/javascript" src="javascripts/jquery.min.js"></script> <!--jQuery is not required by the library. We use it in DEMO page-->
-<!-- CryptoStego JS files.--> 
-
-<script type="text/javascript" src="javascripts/sha512.js"></script>
-<script type="text/javascript" src="javascripts/utf_8.js"></script>
-<script type="text/javascript" src="javascripts/crypto.js"></script>
-<script type="text/javascript" src="javascripts/readimg.js"></script>
-<script type="text/javascript" src="javascripts/setimg.js"></script>
-<script type="text/javascript" src="javascripts/main.js"></script>
-
-<!-- above scripts equivalent to <script type="text/javascript" src="cryptostego.min.js"></script>
-<script type="text/javascript" src="javascripts/cryptostego.min.js"></script>-->
+<script type="text/javascript" src="javascripts/cryptostego.min.js"></script>
 <script type="text/javascript">
 function writeIMG(){
     $("#resultimg").hide();
@@ -115,13 +104,13 @@ function writeIMG(){
             selectedVal = selected.val();
         }
         var t = writeMsgToCanvas('canvas',$("#msg").val(),$("#pass").val(),selectedVal);
-        if(t!=null){ 
-            var myCanvas = document.getElementById("canvas");  
-            var image = myCanvas.toDataURL("image/png");    
+        if(t===true){
+            var myCanvas = document.getElementById("canvas");
+            var image = myCanvas.toDataURL("image/png");
             $("#resultimg").attr('src',image);
             $("#result").html('Success! Save the result image below and send it to others!');
             $("#resultimg").show();
-        }
+        } else $("#result").html(t);
     }
     loadIMGtoCanvas('file','canvas',writefunc,500);
 }
@@ -137,13 +126,13 @@ function readIMG(){
         var t= readMsgFromCanvas('canvas',$("#pass").val(),selectedVal);
         if(t!=null){
             t=t.split('&').join('&amp;');
-            t=t.split(' ').join('&nbsp;'); 
+            t=t.split(' ').join('&nbsp;');
             t=t.split('<').join('&lt;');
             t=t.split('>').join('&gt;');
             t=t.replace(/(?:\r\n|\r|\n)/g, '<br />');
             $("#result").html(t);
         }else $("#result").html('ERROR REAVEALING MESSAGE!');
-             
+
     }
     loadIMGtoCanvas('file','canvas',readfunc);
 }
