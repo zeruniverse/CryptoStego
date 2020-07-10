@@ -2,22 +2,20 @@
 JS library for steganography with encryption - Hide text in an image with encryption and obfuscation. Support least significant bit mode and DCT mode.
 
 ## Version
-v1.5
+v1.8
 
 ## DEMO
 [http://stego.js.org](http://stego.js.org)
 **Note: Library needs HTML5 support!**
 
 ## Download
-Download [cryptostego.min.js](https://github.com/zeruniverse/CryptoStego/releases/download/v1.5/cryptostego.min.js)
+Download [cryptostego.min.js](https://github.com/zeruniverse/CryptoStego/releases/latest/download/cryptostego.min.js)
 **Note: This JS library needs HTML5 support!**
 
 ## Features
 + Obfuscation - Random initialization of invalid bits
-+ Non-linear bit-by-bit message storage
-+ Valid bits and their order decided by SHA512-based hash function
-+ Password decides the parameter in hash function. Different passwords map message to different locations in the image
-+ No signal for password error. Wrong password results in wrong message
++ Non-linear bit-by-bit message storage without any header. Built for absolute security (No signal for password error. Wrong password results in wrong message).
++ New in 1.8: Valid bits and their order decided by Mersenne Twister PRNG, and seed generated using `SHA512(password)`. This is faster compared to old method and leads to less JS errors.
 + LSB (Least Significant Bit) mode
   + Use least significant bits of RGB channels of each pixel to store message
   + Resulting image is visually identical to original one
@@ -26,9 +24,16 @@ Download [cryptostego.min.js](https://github.com/zeruniverse/CryptoStego/release
   + Store information by slightly changing lowest frequency component of each block in frequency domain
   + Robust to image compression but stores less data compared to LSB mode
   + Resulting image looks different from original one
+  + New in 1.8: Add support CbCr downsampling. Hence more robust on compression at level 5
+  + New in 1.8: Add support to JPEG style quantization and the bucket range is thus more reasonable on secrecy and robustness trade-off
+  + New in 1.8: Use DCT difference instead of absolute value. Thus basic robustness against filtering (e.g. exposure, brilliance adjustment)
+  + New in 1.8: Add support to write data into any frequency band on DCT space. Before I only wrote to lowest frequency band.
+  + New in 1.8: More detailed comments in base class code. You can adjust all parameters for your use case
 
 ## Usage
-This library provides 3 functions. Use `<script src="cryptostego.min.js"></script>` in your HTML to include this library.
+
+This library provides 3 wrapper functions. Use `<script src="cryptostego.min.js"></script>` in your HTML to include this library.
+
 ### `loadIMGtoCanvas(inputid, canvasid, callback, maxsize)`
 This function loads an image from file input to a dynamically generated canvas. After that, it will call `callback()` function to do some stuff, and then delete the generated canvas.
   + `inputid` is the id of the html5 file input.
@@ -63,43 +68,54 @@ This function loads an image from file input to a dynamically generated canvas. 
     + If `maxsize`<=0, image will not be scaled (use original size). This is not recommended if your callback function is steganography function (write info to image). As super large image will make browser dead. A recommended value is 500.
     + Make sure when callback function is reading info from image, your `maxsize` is at least the `maxsize` you use for steganography. As steganography algorithm is not robust to scale.
 
-### `writeMsgToCanvas(canvasid,msg,pass,mode)`
+### `writeMsgToCanvas(canvasid,msg,pass,level)`
 This function writes your message into image in canvas `canvasid`. Before calling this function, make sure some image is loaded in `canvasid`. Usually, this function will be called in callback function of `loadIMGtoCanvas`
 + `canvasid` specifies the id of the canvas to whose image the message will be written to.
 + `msg` specifies the message.
 + `pass` specifies the password for retrieving the message. (default value is '')
-+ `mode` an integer specifies the steganography mode. [0-5]
++ `level` an integer specifies the steganography level. [0-5]
   + `0` -> LSB mode (default), result image looks identical to original image.
   + `1` - `5` -> DCT mode, higher value means better robustness to compression but the image looks more different from the original one.
-  + Generally, if you don't need image compression robustness, use mode `0`, otherwise, mode `2` and `3` are recommended.
+  + Generally, if you don't need image compression robustness, use level `0`, otherwise, level `2` and `3` are recommended.
 
-+ Return value is either `null` or `1`, `null` stands for `fail` and `1` stands for `success`.
++ Return value is either `true` or a string, `===true` stands for `success` and a string stands for `failure` with string being error message.
 
-### `readMsgFromCanvas(canvasid,pass,mode)`
+### `readMsgFromCanvas(canvasid,pass,level)`
 This function reads your message from image in canvas `canvasid`. Before calling this function, make sure some image is loaded in `canvasid`. Usually, this function will be called in callback function of `loadIMGtoCanvas`
-+ **To successfully read message, `pass` and `mode` should be same as what you use in `writeMsgToCanvas`. And the image in `canvasid` should be the result image of `writeMsgToCanvas`.**
++ **To successfully read message, `pass` and `level` should be same as what you use in `writeMsgToCanvas`. And the image in `canvasid` should be the result image of `writeMsgToCanvas`.**
 + All parameters have same meaning as in `writeMsgToCanvas`.
-+ Return value is a string or `null`
-  + `null` means fail to read message. It might caused by wrong password, wrong image or wrong parameters.
-  + returned string is the message retrieved. It might be some meaningless characters on error.
++ Return value is a string
+  + the string is either retrieved message or error message.
 
 ## Advance Usage
 
-`writeMsgToCanvas` and `readMsgFromCanvas` functions can be replaced by `writeMsgToCanvas_single(canvasid,msg,pass,dct,copy,lim)` and `readMsgFromCanvas_single(canvasid,pass,dct,copy,lim)`,
-which have the same effects but you can specify more parameters. `dct` is a boolean meaning whether DCT mode should be used. If `dct=true`, `copy` and `lim` will be considered by these two functions.
+`writeMsgToCanvas` and `readMsgFromCanvas` functions are wrappers with 5 sets of pre-defined parameters. If none of them work for you, you can finetune those parameters yourself using `writeMsgToCanvas_base(canvasid, msg, pass, use_dct, num_copy, multiply, loc, use_y, use_downsampling)` and `readMsgFromCanvas_base(canvasid, pass, use_dct, num_copy, multiply, loc, use_y, use_downsampling)`. Configurable parameters are `use_dct, num_copy, multiply, loc, use_y, use_downsampling`. Make sure they are same on write and read otherwise read will fail.
 
-`copy` means how many copies of this message should be stored. It's usually an odd integer so that as long as more than half of the data is correct, the result is correct. A high `copy` value means
-higher robustness but less data capacity.
+`writeMsgToCanvas_base` returns `true` on success (check with `result === true`). Otherwise, a string with error message.
 
-`lim` means how much difference between a bit '0' and a bit '1' should reflect on the image. Higher `lim` provides better robustness but the image will look more different from the original one.
+`readMsgFromCanvas_base` returns a size 2 array `[status, message]`: `status` is a boolean: `true` means success and decrypted message is in `message`. `false` means failure and error message is in `message`. Note, `status===true` does not imply **real success**, the `message` might be random characters if password is wrong. By design, there's no way to check if this function call is really successful.
 
-Refer to `main.js` for examples setting `copy` and `lim` parameters.
+### Configurable parameters
+
++ use_dct (bool): true for DCT, false for LSB
++ num_copy (positive integer): how many copies of each bit to write into image. Larger value is more robust but reduces data capacity (how many data you can write). For LSB, you should just use `num_copy=1` as LSB is not robust to compression anyway
+
+**below only valid for `use_dct=true`**
+
++ multiply (positive real number): `Q' = multiply * Q` will be used to quantize DCT matrix. `Q` is JPEG 50% quantization matrix. Larger value is more robust but image is more distorted
++ loc (1D array of int 0-63): which frequency band locations on each block to write data. For example `[1,8]` means to use frequency matrix location `[(0, 1), (1, 0)]` and `[0]` means only using lowest frequency band
++ use_y (bool): whether to manipulate Y channel. If `false`, data will only be written to CbCr channels
++ use_downsampling(bool): whether to downsample on CrCb, if `true`, CbCr DCT will be performed on `16*16` blocks
 
 ## Compression Robustness for DCT
 
 ### Raw image and data
-Image before steganography (268KB in PNG format):
-![dandelionclock](https://cloud.githubusercontent.com/assets/4648756/15265727/6b29773e-1941-11e6-9245-3275ff0afcf2.jpg)
+
+You can download those images and try to decrypt them on [http://stego.js.org](http://stego.js.org). Leave the password cell empty.
+
+### Image before steganography / post-stego (level 0) are same to human eyes (650.1KB in PNG format):
+
+![maple](https://user-images.githubusercontent.com/4648756/87104009-84671b80-c20b-11ea-995b-72bc47d43766.png)
 
 Data:
 ```
@@ -112,35 +128,83 @@ BONJOUR LE MONDE!
 ПРИВЕТ МИР!
 ```
 
-### Compression Ratio 9.4% (25.2KB)
-![result 3](https://user-images.githubusercontent.com/4648756/30573644-0e8ffc94-9cc3-11e7-8157-f807db294a51.jpg)
-Retrieved data correct for mode 2,3,4,5!
+The decryption results should be correct for all levels without compression. Above image is generated using level 0.
 
-### Compression Ratio 4.2% (11.2KB)
-![optimized-result 3](https://user-images.githubusercontent.com/4648756/30573739-8d233670-9cc3-11e7-854a-0834869524e3.jpg)
-Result for mode 3:
+### Limit of Level 1 (Compression Ratio 15.8% - 102.6KB)
+
+![maple](https://user-images.githubusercontent.com/4648756/87104394-a01ef180-c20c-11ea-9df8-0e06d805e71e.jpg)
+
+Level 1-5 should all work at or above this compression ratio. Above image is generated using level 1 (very similar to original)
+
+### Limit of Level 2 (Compression Ratio 11% - 71.6KB)
+
+![maple](https://user-images.githubusercontent.com/4648756/87104741-b1b4c900-c20d-11ea-8389-052b59157139.jpg)
+
+Level 2-5 should all work at or above this compression ratio. Above image is generated using level 2 (very similar to original with noticeable distortion)
+
+### Limit of Level 3 (Compression Ratio 8.8% - 57.3KB)
+
+![maple](https://user-images.githubusercontent.com/4648756/87105103-df4e4200-c20e-11ea-9eef-2533101cb461.jpg)
+
+Level 3-5 should all work at or above this compression ratio. Above image is generated using level 3
+
+**Level 3 should be safe for most compressions by social apps (reduced size image), including Messengers, WeChat etc.**
+
+### Limit of Level 4 (Compression Ratio 5.4% - 35.0KB)
+
+![maple](https://user-images.githubusercontent.com/4648756/87105846-e5ddb900-c210-11ea-9d06-b302b8d6af90.jpg)
+
+Level 4-5 should all work at or above this compression ratio. Above image is generated using level 4
+
+### Limit of Level 5 (Compression Ratio 2.7% - 17.7KB)
+
+![maple](https://user-images.githubusercontent.com/4648756/87106397-3acdff00-c212-11ea-9c53-4eb39d28dba8.jpg)
+
+Level 5 should work at or above this compression ratio. Above image is generated using level 5.
+
+### Partial Decryption of level 5  (Compression Ratio 1.4% - 9.4KB)
+
+![maple](https://user-images.githubusercontent.com/4648756/87106643-c34c9f80-c212-11ea-9f9f-e8c74bf79a0f.jpg)
+
+At compression ratio 1.4% (< 10KB), the level 5 steganography (above image) still recovers most of the data
+
 ```
-你好，乖界！
-HELLO WORLD!
+你好，世界Ａ
+HELLO WOZLD!
 ¡HOLA MUNDO!
-مرحبا بالعالم!
-BONJOUR LE0MONDE!
-こんにちは世界！
-ПРИВЕТ МИР!
+مرحبا بالعدلم!
+BONJOUR LE OONDE!
+こんにちね世畍！
+ПРP鐒ѕЦ ИИР!
 ```
 
-Data retrieved correctly for mode 5 as compression ratio 4.2%
+## Other Robustness for DCT
 
-### Compression Ratio 1.5% (4.10KB)
-![result 3 1](https://user-images.githubusercontent.com/4648756/30573930-a1495390-9cc4-11e7-9ac6-f0746898711c.jpg)
-Result for mode 5:
-```
-你好，世畄！
-HELLO WORLDኂሏLA MUNDK!
-مرحبا باɄعالم!BONJOUR LE MON@G
-こんにちは世畈︁
-ПРИВՐ⠐쐘Р!
-```
+### Robust to Photo Editing
+
+Simple photo editing (brilliance, exposure etc.) applies most changes to lowest frequency band. Level 1-3 DCT does not apply to lowest frequency band so they are pretty robust. **Level 4-5 is not robust to photo editing!**
+
+I used the same maple image, wrote same data with level 3 and let iPhone photo app auto enhance the result image (basically adjusts on brilliance, exposure and highlights). Then sent to my computer via WeChat **reduced size image**. I can successfully read data in my computer. Below is the image I received at my computer (73.6KB) (you can download and decrypt it on [http://stego.js.org](http://stego.js.org). Choose level 3 and leave password cell blank):
+
+![maple](https://user-images.githubusercontent.com/4648756/87109198-dfebd600-c218-11ea-8db0-1a5b9a92734e.jpg)
+
+### Robust to Photo Stylizing
+
+Stylizing changes images much more compared to simple editing. But luckily, level 3 is robust to most iPhone stylization (e.g. vivid, dramatic etc.). However, to fully recover message, I can't compress much after stylization.
+
+Below is the same maple image first stego data using level 3, no password and then stylized by iPhone photo app with vivid warm theme.
+
+![maple](https://user-images.githubusercontent.com/4648756/87110272-71f4de00-c21b-11ea-9fd1-cb02ccb7fe0b.jpg)
+
+### Robust to Resizing
+
+To achieve robustness on resizing, you **must know at which size the message is written in** because the data order is related to image size. That said, you should resize the image so that it matches the size when the data is written in before decryption.
+
+After data is written in, scaling up will never cause issue because all information is preserved. Level 1-3 should be robust if new image is more than 0.25X of original image. Level 4-5 should be robust if new image is more than 0.0625X of original image. If compression is involved during resizing, the robustness is weakened. (Level 5 is more robust than level 4 to resizing as downsampling is used)
+
+Below is the maple image first stego data using level 5, no password, then scale down to 0.0625X and then scale up 16X for decryption. The decrypt results are correct and complete.
+
+![maple](https://user-images.githubusercontent.com/4648756/87111581-8a1a2c80-c21e-11ea-8510-5f0774fbae34.jpg)
 
 
 ## Coding Example
@@ -148,5 +212,7 @@ Refer to `example/` folder
 
 ## Copyright
 Jeffery Zhao
-License: GNU **A**GPL v3.0 or later (MIT License allowed for non-commercial purposes)
+
+License: GNU **A**GPL v3.0 or later (GNU GPL v3.0 license allowed for non-commercial purposes but derived / re-distributed work must apply same license as this project or pure AGPL v3.0)
+
 The copyright for Crypto-JS is reserved by its authors.

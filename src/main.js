@@ -2,15 +2,16 @@
 // Parameters optimized according to tests.
 function writeMsgToCanvas(canvasid,msg,pass,mode){
     mode=(mode=== undefined)?0:parseInt(mode);
+    var f = writeMsgToCanvas_base;
     switch (mode) {
-        case 1: return writeMsgToCanvas_base(canvasid, msg, pass, true, 11, 2, [2, 9, 16], true, false);
-        case 2: return writeMsgToCanvas_base(canvasid, msg, pass, true, 11, 2.5, [1, 2, 8], true, false);
-        case 3: return writeMsgToCanvas_base(canvasid, msg, pass, true, 11, 3, [0, 1], true, false);
-        case 4: return writeMsgToCanvas_base(canvasid, msg, pass, true, 5, 4, [0], true, false);
-        case 5: return writeMsgToCanvas_base(canvasid, msg, pass, true, 5, 6, [0], true, true);
+        case 1: return f(canvasid, msg, pass, true, 23, 2, [2, 9, 16], true, false);
+        case 2: return f(canvasid, msg, pass, true, 17, 3, [1, 8], true, false);
+        case 3: return f(canvasid, msg, pass, true, 17, 5, [1, 8], true, false);
+        case 4: return f(canvasid, msg, pass, true, 5, 5, [0], true, false);
+        case 5: return f(canvasid, msg, pass, true, 5, 6, [0], true, true);
 
         case 0:
-        default: return writeMsgToCanvas_base(canvasid, msg, pass, false, 1);
+        default: return f(canvasid, msg, pass, false, 1);
     }
 }
 
@@ -18,14 +19,15 @@ function writeMsgToCanvas(canvasid,msg,pass,mode){
 //Return msg (null -> fail)
 function readMsgFromCanvas(canvasid,pass,mode){
     mode=(mode=== undefined)?0:parseInt(mode);
+    var f = readMsgFromCanvas_base;
     switch (mode) {
-        case 1: return readMsgFromCanvas_base(canvasid, pass, true, 11, 2, [2, 9, 16], true, false)[1];
-        case 2: return readMsgFromCanvas_base(canvasid, pass, true, 11, 2.5, [1, 2, 8], true, false)[1];
-        case 3: return readMsgFromCanvas_base(canvasid, pass, true, 11, 3, [0, 1], true, false)[1];
-        case 4: return readMsgFromCanvas_base(canvasid, pass, true, 5, 4, [0], true, false)[1];
-        case 5: return readMsgFromCanvas_base(canvasid, pass, true, 5, 6, [0], true, true)[1];
+        case 1: return f(canvasid, pass, true, 23, 2, [2, 9, 16], true, false)[1];
+        case 2: return f(canvasid, pass, true, 17, 3, [1, 8], true, false)[1];
+        case 3: return f(canvasid, pass, true, 17, 5, [1, 8], true, false)[1];
+        case 4: return f(canvasid, pass, true, 5, 5, [0], true, false)[1];
+        case 5: return f(canvasid, pass, true, 5, 6, [0], true, true)[1];
         case 0:
-        default: return readMsgFromCanvas_base(canvasid, pass, false, 1)[1];
+        default: return f(canvasid, pass, false, 1)[1];
     }
 }
 

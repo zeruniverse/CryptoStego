@@ -10,15 +10,13 @@ function ycbcr2rgb(y,cb,cr){
 
 function get_hashed_order(password, arr_len){
     // O(arr_len) algorithm
-
-    var prime_num = 13103574579095113781;
     var orders = Array.from(Array(arr_len).keys());
-    password=String(CryptoJS.SHA512(password));
-    var password_len = password.length;
     var result = [];
     var loc;
+    var seed = CryptoJS.SHA512(password).words.reduce(function (total, num) {return total + Math.abs(num);}, 0);
+    var rnd = new MersenneTwister(seed);
     for(var i=arr_len; i>0; i--){
-        loc = (password.charCodeAt(i % password_len) * prime_num) % i;
+        loc = rnd.genrand_int32() % i;
         result.push(orders[loc]);
         orders[loc] = orders[i-1];
     }
