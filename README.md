@@ -107,6 +107,10 @@ This function reads your message from image in canvas `canvasid`. Before calling
 + use_y (bool): whether to manipulate Y channel. If `false`, data will only be written to CbCr channels
 + use_downsampling(bool): whether to downsample on CrCb, if `true`, CbCr DCT will be performed on `16*16` blocks
 
+### Build Your Project with CryptoStego
+
+Generally speaking, you don't need to touch any algorithm details as they are well encapsulated. I think for most (99%) use cases (for example, you don't want to use `canvas`), you can just adapt `writeMsgToCanvas_base` and `readMsgFromCanvas_base` to fit your needs. Any function called by those two `_base` functions is pure algorithm.
+
 ## Compression Robustness for DCT
 
 ### Raw image and data
@@ -208,7 +212,8 @@ Below is the maple image first stego data using level 5, no password, then scale
 
 
 ## Coding Example
-Refer to `example/` folder
+
+Refer to `example/` folder.
 
 ## Copyright
 Jeffery Zhao
