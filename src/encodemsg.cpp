@@ -141,7 +141,7 @@ bool stego_msg(const std::string& inputImagePath, const std::string& outputImage
 
     // 计算嵌入容量
     size_t block_size = 8;
-    size_t bitsPerBlockPerChannel = 4; // 每个通道每块嵌入4位
+    size_t bitsPerBlockPerChannel = 2; // 每个通道每块嵌入4位
     size_t capacityPerChannel = (channels[0].rows / block_size) * (channels[0].cols / block_size) * bitsPerBlockPerChannel;
     size_t totalCapacity = capacityPerChannel * 3; // Y, Cr, Cb 三个通道
 
@@ -184,7 +184,7 @@ bool stego_msg(const std::string& inputImagePath, const std::string& outputImage
                 cv::dct(blockFloat, blockFloat);
 
                 // 嵌入4位信息到中频系数
-                std::vector<std::pair<int, int>> coef_positions = {{4,3}, {3,4}, {5,2}, {2,5}};
+                std::vector<std::pair<int, int>> coef_positions = {{1,2}, {2,1}};
                 for(auto &[i, j] : coef_positions) {
                     if(bitIndex >= bits.size()) break;
                     char bit = bits[bitIndex];
@@ -269,7 +269,7 @@ std::string decode_msg(const std::string& stegoImagePath, float step_size, const
 
     // 计算嵌入容量
     size_t block_size = 8;
-    size_t bitsPerBlockPerChannel = 4; // 每个通道每块嵌入4位
+    size_t bitsPerBlockPerChannel = 2; // 每个通道每块嵌入4位
     size_t capacityPerChannel = (channels[0].rows / block_size) * (channels[0].cols / block_size) * bitsPerBlockPerChannel;
     size_t totalCapacity = capacityPerChannel * 3; // Y, Cr, Cb 三个通道
 
@@ -291,7 +291,7 @@ std::string decode_msg(const std::string& stegoImagePath, float step_size, const
                 cv::dct(blockFloat, blockFloat);
 
                 // 提取4位信息从中频系数
-                std::vector<std::pair<int, int>> coef_positions = {{4,3}, {3,4}, {5,2}, {2,5}};
+                std::vector<std::pair<int, int>> coef_positions = {{1,2}, {2,1}};
                 for(auto &[i, j] : coef_positions) {
                     float coef = blockFloat.at<float>(i, j);
 
