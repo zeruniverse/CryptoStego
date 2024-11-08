@@ -118,22 +118,16 @@ bool stego_msg(const std::string& inputImagePath, const std::string& outputImage
     // 将消息转换为位
     std::vector<bool> message_bits = bytesToBits(message_bytes);
 
-    // 确保消息位数为8的倍数
-    if (message_bits.size() % 8 != 0) {
-        std::cerr << "消息位数必须为8的倍数。" << std::endl;
-        return false;
-    }
-
     // 添加消息长度信息（11位），重复三次
     std::vector<bool> length_bits = uint11ToBits(static_cast<uint16_t>(message_length));
     std::vector<bool> length_bits_repeated;
     for(int i = 0; i < 3; ++i){
         length_bits_repeated.insert(length_bits_repeated.end(), length_bits.begin(), length_bits.end());
     }
-    std::vector<bool> length_encoded = codec.encode(length_bits_repeated); // 编码后的比特长度 = length_bits_repeated.size() * 9 + 27
+    std::vector<bool> length_encoded = codec.encode(length_bits_repeated);
 
-    // 使用编码器对消息位进行编码，编码长度为原始长度的9倍
-    std::vector<bool> encoded_bits = codec.encode(message_bits); // 编码后的比特长度 = message_bits.size() * 9 + 27
+    // 使用编码器对消息位进行编码
+    std::vector<bool> encoded_bits = codec.encode(message_bits);
 
     std::vector<bool> full_bits;
     full_bits.insert(full_bits.end(), length_encoded.begin(), length_encoded.end());
@@ -141,7 +135,7 @@ bool stego_msg(const std::string& inputImagePath, const std::string& outputImage
 
     // 计算嵌入容量
     size_t block_size = 8;
-    size_t bitsPerBlockPerChannel = 2; // 每个通道每块嵌入4位
+    size_t bitsPerBlockPerChannel = 1; // 每个通道每块嵌入1位
     size_t capacityPerChannel = (channels[0].rows / block_size) * (channels[0].cols / block_size) * bitsPerBlockPerChannel;
     size_t totalCapacity = capacityPerChannel * 3; // Y, Cr, Cb 三个通道
 
@@ -167,7 +161,7 @@ bool stego_msg(const std::string& inputImagePath, const std::string& outputImage
     std::vector<char> bitsCr(P.begin() + bitsPerChannel, P.begin() + 2 * bitsPerChannel);
     std::vector<char> bitsCb(P.begin() + 2 * bitsPerChannel, P.end());
 
-    // 嵌入到通道的函数
+    // 嵌入到通道的函数（已修改）
     auto embed_bits_to_channel = [&](cv::Mat& channel, const std::vector<char>& bits, float step_size_channel) {
         size_t bitIndex = 0;
         for (int row = 0; row + block_size <= channel.rows; row += block_size) {
@@ -183,32 +177,45 @@ bool stego_msg(const std::string& inputImagePath, const std::string& outputImage
                 block.convertTo(blockFloat, CV_32F);
                 cv::dct(blockFloat, blockFloat);
 
-                // 嵌入4位信息到中频系数
-                std::vector<std::pair<int, int>> coef_positions = {{1,2}, {2,1}};
-                for(auto &[i, j] : coef_positions) {
-                    if(bitIndex >= bits.size()) break;
-                    char bit = bits[bitIndex];
-                    if(bit == -1){
-                        // 不需要编码，跳过
-                        bitIndex++;
-                        continue;
-                    }
+                // 嵌入1位信息到一对中频系数
+                int i1 = 1, j1 = 2;
+                int i2 = 2, j2 = 1;
 
-                    float coef = blockFloat.at<float>(i, j);
-
-                    // 使用修正后的QIM嵌入逻辑
-                    int quantized_steps = std::round(coef / step_size_channel);
-                    if (quantized_steps % 2 != bit) {
-                        if (quantized_steps * step_size_channel > coef)
-                            quantized_steps -= 1;
-                        else
-                            quantized_steps += 1;
-                    }
-                    float new_coef = quantized_steps * step_size_channel;
-                    blockFloat.at<float>(i, j) = new_coef;
-
+                char bit = bits[bitIndex];
+                if(bit == -1){
+                    // 不需要编码，跳过
                     bitIndex++;
+                    continue;
                 }
+
+                float coef1 = blockFloat.at<float>(i1, j1);
+                float coef2 = blockFloat.at<float>(i2, j2);
+
+                // 根据比特调整系数的相对大小
+                if (bit == 1) {
+                    if (std::abs(coef1) <= std::abs(coef2)) {
+                        // 增加差值以确保 coef1 > coef2
+                        float adjustment = (std::abs(coef2) - std::abs(coef1)) + step_size_channel;
+                        if (coef1 >= 0) {
+                            coef1 += adjustment;
+                        } else {
+                            coef1 -= adjustment;
+                        }
+                    }
+                } else {
+                    if (std::abs(coef1) >= std::abs(coef2)) {
+                        // 增加差值以确保 coef1 < coef2
+                        float adjustment = (std::abs(coef1) - std::abs(coef2)) + step_size_channel;
+                        if (coef2 >= 0) {
+                            coef2 += adjustment;
+                        } else {
+                            coef2 -= adjustment;
+                        }
+                    }
+                }
+
+                blockFloat.at<float>(i1, j1) = coef1;
+                blockFloat.at<float>(i2, j2) = coef2;
 
                 // 进行反DCT变换
                 cv::Mat idctBlock;
@@ -217,19 +224,19 @@ bool stego_msg(const std::string& inputImagePath, const std::string& outputImage
                 // 将IDCT结果转换回8位
                 idctBlock.convertTo(block, CV_8U);
                 block.copyTo(channel(roi));
+
+                bitIndex++;
             }
             if (bitIndex >= bits.size()) break;
         }
     };
 
-    // 在 Y 通道中嵌入，使用用户指定的步长
+    // 在各通道中嵌入，使用用户指定的步长
     embed_bits_to_channel(channels[0], bitsY, step_size);
 
-    // 在 Cr 通道中嵌入，步长可以调整（例如更大）
     float step_size_cr = step_size * 1.5f; // 可根据需要调整
     embed_bits_to_channel(channels[1], bitsCr, step_size_cr);
 
-    // 在 Cb 通道中嵌入，步长可以调整（例如更大）
     float step_size_cb = step_size * 1.5f; // 可根据需要调整
     embed_bits_to_channel(channels[2], bitsCb, step_size_cb);
 
@@ -238,15 +245,18 @@ bool stego_msg(const std::string& inputImagePath, const std::string& outputImage
     cv::Mat stegoImage;
     cv::cvtColor(ycrcb, stegoImage, cv::COLOR_YCrCb2BGR);
 
-    // 保存图像，使用无损格式如PNG
-    if (!cv::imwrite(outputImagePath, stegoImage)) {
+    std::vector<int> compression_params;
+    compression_params.push_back(cv::IMWRITE_JPEG_QUALITY);
+    compression_params.push_back(60); // 调整JPEG质量因子
+
+    // 保存图像，使用JPEG格式以测试抗压缩性
+    if (!cv::imwrite(outputImagePath, stegoImage, compression_params)) {
         std::cerr << "无法保存隐写后的图像: " << outputImagePath << std::endl;
         return false;
     }
 
     return true;
 }
-
 // 解码函数：从隐写图像中提取信息
 std::string decode_msg(const std::string& stegoImagePath, float step_size, const std::string& password) {
     // 初始化解码器
@@ -269,14 +279,14 @@ std::string decode_msg(const std::string& stegoImagePath, float step_size, const
 
     // 计算嵌入容量
     size_t block_size = 8;
-    size_t bitsPerBlockPerChannel = 2; // 每个通道每块嵌入4位
+    size_t bitsPerBlockPerChannel = 1; // 每个通道每块嵌入1位
     size_t capacityPerChannel = (channels[0].rows / block_size) * (channels[0].cols / block_size) * bitsPerBlockPerChannel;
     size_t totalCapacity = capacityPerChannel * 3; // Y, Cr, Cb 三个通道
 
     // 基于密码生成嵌入顺序
     std::vector<size_t> order = generate_order(totalCapacity, password);
 
-    // 提取所有嵌入位的方法
+    // 提取所有嵌入位的方法（已修改）
     auto extract_bits = [&](const cv::Mat& channel, float step_size_channel) -> std::vector<bool> {
         std::vector<bool> bits;
         for (int row = 0; row + block_size <= channel.rows; row += block_size) {
@@ -290,46 +300,43 @@ std::string decode_msg(const std::string& stegoImagePath, float step_size, const
                 block.convertTo(blockFloat, CV_32F);
                 cv::dct(blockFloat, blockFloat);
 
-                // 提取4位信息从中频系数
-                std::vector<std::pair<int, int>> coef_positions = {{1,2}, {2,1}};
-                for(auto &[i, j] : coef_positions) {
-                    float coef = blockFloat.at<float>(i, j);
+                // 提取1位信息从一对中频系数
+                int i1 = 1, j1 = 2;
+                int i2 = 2, j2 = 1;
 
-                    // 使用修正后的QIM解码逻辑
-                    int bit = static_cast<int>(std::round(coef / step_size_channel)) % 2;
-                    bits.push_back(bit);
-                }
+                float coef1 = blockFloat.at<float>(i1, j1);
+                float coef2 = blockFloat.at<float>(i2, j2);
+
+                char bit = (std::abs(coef1) > std::abs(coef2)) ? 1 : 0;
+                bits.push_back(bit);
             }
         }
         return bits;
     };
 
-    // 从 Y 通道提取位
+    // 从各通道提取位
     std::vector<bool> bitsY = extract_bits(channels[0], step_size);
 
-    // 从 Cr 通道提取位，步长需要一致
     float step_size_cr = step_size * 1.5f;
     std::vector<bool> bitsCr = extract_bits(channels[1], step_size_cr);
 
-    // 从 Cb 通道提取位，步长需要一致
     float step_size_cb = step_size * 1.5f;
     std::vector<bool> bitsCb = extract_bits(channels[2], step_size_cb);
 
     // 将 bitsY, bitsCr, bitsCb 合并为 P
-    std::vector<bool> P(totalCapacity, 0);
+    std::vector<bool> P(totalCapacity);
+    size_t idx = 0;
     for(size_t i = 0; i < bitsY.size(); ++i){
-        P[i] = bitsY[i] ? 1 : 0;
+        P[idx++] = bitsY[i];
     }
     for(size_t i = 0; i < bitsCr.size(); ++i){
-        P[i + capacityPerChannel] = bitsCr[i] ? 1 : 0;
+        P[idx++] = bitsCr[i];
     }
     for(size_t i = 0; i < bitsCb.size(); ++i){
-        P[i + 2 * capacityPerChannel] = bitsCb[i] ? 1 : 0;
+        P[idx++] = bitsCb[i];
     }
 
     // 根据 ORDER 重组位序列
-    // 在解码时，我们需要先提取长度信息，再提取消息
-
     // 先提取长度信息
     std::vector<bool> length_bits_retrieved;
     for(int i = 0; i < 9 * 3 * 11 + 27; ++i){
@@ -406,7 +413,6 @@ std::string decode_msg(const std::string& stegoImagePath, float step_size, const
     std::string message = bytesToString(decoded_bytes);
     return message;
 }
-
 int main(int argc, char* argv[]) {
     if (argc < 2) {
         std::cerr << "用法:\n"
