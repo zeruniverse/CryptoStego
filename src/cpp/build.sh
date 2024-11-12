@@ -1,0 +1,1 @@
+em++ codecs.cpp -O3 --bind -s WASM=1 -s MODULARIZE=1 -sSTACK_SIZE=30MB -sDEFAULT_PTHREAD_STACK_SIZE=30MB -s EXPORT_ES6=1 -s ENVIRONMENT='web' -o codecs.js

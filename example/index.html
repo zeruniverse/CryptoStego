@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Steganography App</title>
+    <!-- Include the ort.min.js -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.webgpu.min.js"></script> -->
+    <script type="module" src="stego.js"></script>
+</head>
+<body>
+    <input type="file" id="imageInput" accept="image/*"><br><br>
+    <textarea id="messageBox" placeholder="Encode this message to image or decode message from image" style="width:100%;height:100px;"></textarea><br><br>
+    <input type="password" id="passwordBox" placeholder="Password (optional)"><br><br>
+    <button id="encodeButton">Encode (loading models...)</button>
+    <button id="decodeButton">Decode (loading models...)</button><br><br>
+    <canvas id="outputCanvas" style="display:none"></canvas>
+    <div id="errorMessage" style="color:red;"></div>
+    <!-- Hidden canvas for image processing -->
+    <canvas id="hiddenCanvas" style="display:none;"></canvas>
+
+    <script type="module">
+        import { initCodecs, isCodecsReady, loadIMGtoCanvas, writeMsgToCanvas, readMsgFromCanvas } from './stego.js';
+
+        const encodeButton = document.getElementById('encodeButton');
+        const decodeButton = document.getElementById('decodeButton');
+        const imageInput = document.getElementById('imageInput');
+        const messageBox = document.getElementById('messageBox');
+        const passwordBox = document.getElementById('passwordBox');
+        const outputCanvas = document.getElementById('outputCanvas');
+        const errorMessage = document.getElementById('errorMessage');
+
+        // Initialize codecs
+        initCodecs().then(() => {
+            encodeButton.textContent = 'Encode';
+            decodeButton.textContent = 'Decode';
+            encodeButton.disabled = false;
+            decodeButton.disabled = false;
+        }).catch((e) => {
+            errorMessage.textContent = e.message;
+        });
+
+        // Load image when selected
+        imageInput.addEventListener('change', () => {
+            loadIMGtoCanvas('imageInput', 'hiddenCanvas', 600).catch((e) => {
+                errorMessage.textContent = e.message;
+            });
+        });
+
+        // Encode button click
+        encodeButton.addEventListener('click', async () => {
+            outputCanvas.style.display = 'none';
+            errorMessage.textContent = '';
+            if (!isCodecsReady()) {
+                errorMessage.textContent = 'Codecs not ready.';
+                return;
+            }
+            try {
+                await writeMsgToCanvas('hiddenCanvas', messageBox.value, passwordBox.value || '');
+                // Display the encoded image
+                const hiddenCanvas = document.getElementById('hiddenCanvas');
+                const ctx = outputCanvas.getContext('2d');
+                outputCanvas.width = hiddenCanvas.width;
+                outputCanvas.height = hiddenCanvas.height;
+                ctx.drawImage(hiddenCanvas, 0, 0);
+                outputCanvas.style.display = 'block';
+            } catch (e) {
+                errorMessage.textContent = e.message;
+            }
+        });
+
+        // Decode button click
+        decodeButton.addEventListener('click', async () => {
+            outputCanvas.style.display = 'none';
+            errorMessage.textContent = '';
+            if (!isCodecsReady()) {
+                errorMessage.textContent = 'Codecs not ready.';
+                return;
+            }
+            try {
+                const message = await readMsgFromCanvas('hiddenCanvas', passwordBox.value || '');
+                messageBox.value = message;
+            } catch (e) {
+                errorMessage.textContent = e.message;
+            }
+        });
+    </script>
+</body>
+</html>
