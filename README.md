@@ -38,7 +38,7 @@ Tells if encoder / decoder is ready. If you initialized `initCodecs` but didn't 
 
 ### async function loadIMGtoCanvas(inputid, canvasid, maxsize = 0)
 
-Load image from `inputid` (e.g. `input[type=file]`) to `canvasid` (e.g. `<canvas>`) and resize it to `maxsize` (in pixels). If `maxsize` is not specified, it will be the image size. Recommended value is 600.
+Load image from `inputid` (e.g. `input[type=file]`) to `canvasid` (e.g. `<canvas>`) and resize it to `maxsize` (in pixels). If `maxsize` is not specified, it will be the image size. Recommended value is 600. **The image should be at least 300 * 300 to be encoded properly.**
 
 ### async function writeMsgToCanvas(canvasid, msg, password = '', check_valid = true)
 

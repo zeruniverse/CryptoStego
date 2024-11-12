@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <numeric>
 #include <unordered_map>
+#include <unordered_set>
 #include <bitset>
 #include <cmath>
 #include <cstring>
@@ -16,13 +17,107 @@
 #include <emscripten/bind.h>
 
 // Helper function to generate a deterministic permutation based on password using mt19937
-std::vector<uint16_t> generate_permutation(const std::string& password) {
-    std::vector<uint16_t> O(65536);
+std::vector<float> resize_linear(const std::vector<float>& src, int src_width, int src_height,
+                                 int dst_width, int dst_height) {
+    std::vector<float> dst(dst_width * dst_height, 0.0f);
+    float x_ratio = static_cast<float>(src_width) / dst_width;
+    float y_ratio = static_cast<float>(src_height) / dst_height;
+
+    for(int dst_y = 0; dst_y < dst_height; ++dst_y) {
+        float src_y = (dst_y + 0.5f) * y_ratio - 0.5f;
+        int y0 = static_cast<int>(std::floor(src_y));
+        int y1 = y0 + 1;
+        float dy = src_y - y0;
+
+        y0 = std::max(0, std::min(y0, src_height - 1));
+        y1 = std::max(0, std::min(y1, src_height - 1));
+
+        for(int dst_x = 0; dst_x < dst_width; ++dst_x) {
+            float src_x = (dst_x + 0.5f) * x_ratio - 0.5f;
+            int x0 = static_cast<int>(std::floor(src_x));
+            int x1 = x0 + 1;
+            float dx = src_x - x0;
+
+            x0 = std::max(0, std::min(x0, src_width - 1));
+            x1 = std::max(0, std::min(x1, src_width - 1));
+
+            // Bilinear interpolation
+            float top = src[y0 * src_width + x0] * (1 - dx) + src[y0 * src_width + x1] * dx;
+            float bottom = src[y1 * src_width + x0] * (1 - dx) + src[y1 * src_width + x1] * dx;
+            float value = top * (1 - dy) + bottom * dy;
+
+            dst[dst_y * dst_width + dst_x] = value;
+        }
+    }
+
+    return dst;
+}
+
+// Function to perform nearest neighbor resizing
+std::vector<float> resize_nearest(const std::vector<float>& src, int src_width, int src_height,
+                                 int dst_width, int dst_height) {
+    std::vector<float> dst(dst_width * dst_height, 0.0f);
+    float x_ratio = static_cast<float>(src_width) / dst_width;
+    float y_ratio = static_cast<float>(src_height) / dst_height;
+
+    for(int dst_y = 0; dst_y < dst_height; ++dst_y) {
+        int src_y = static_cast<int>(std::round((dst_y + 0.5f) * y_ratio - 0.5f));
+        src_y = std::max(0, std::min(src_y, src_height - 1));
+
+        for(int dst_x = 0; dst_x < dst_width; ++dst_x) {
+            int src_x = static_cast<int>(std::round((dst_x + 0.5f) * x_ratio - 0.5f));
+            src_x = std::max(0, std::min(src_x, src_width - 1));
+
+            dst[dst_y * dst_width + dst_x] = src[src_y * src_width + src_x];
+        }
+    }
+
+    return dst;
+}
+
+// Function to calculate the score as described
+double calculate_score(const std::vector<float>& x, int width = 256, int height = 256) {
+    assert(x.size() == width * height && "Input vector size does not match width and height.");
+
+    // Step 1: Resize x to 128x128 using linear interpolation
+    int resized_width = 128;
+    int resized_height = 128;
+    std::vector<float> y_resized = resize_linear(x, width, height, resized_width, resized_height);
+
+    // Step 2: Threshold y_resized at 0.5 to get y as float (0.0f or 1.0f)
+    std::vector<float> y(y_resized.size(), 0.0f);
+    for(size_t i = 0; i < y_resized.size(); ++i) {
+        y[i] = (y_resized[i] > 0.5f) ? 1.0f : 0.0f;
+    }
+
+    // Step 3: Resize y to 256x256 using nearest neighbor to get z as int (0 or 1)
+    std::vector<float> z_float = resize_nearest(y, resized_width, resized_height, width, height);
+    std::vector<int> z(z_float.size(), 0);
+    for(size_t i = 0; i < z_float.size(); ++i) {
+        z[i] = static_cast<int>(z_float[i]);
+    }
+
+    // Step 4: Compare z with original x (cast to int) and compute the mean of equal elements
+    int equal_count = 0;
+    for(int i = 0; i < width * height; ++i) {
+        int x_int = static_cast<int>(x[i]);
+        if(x_int == z[i]) {
+            equal_count++;
+        }
+    }
+
+    double mean = static_cast<double>(equal_count) / (width * height);
+    return mean;
+}
+
+// Helper function to generate a deterministic permutation based on password using mt19937
+std::vector<uint16_t> generate_permutation(const std::string& password, const uint8_t shift, const size_t reduced_range) {
+    std::vector<uint16_t> O(65536 - reduced_range);
     std::iota(O.begin(), O.end(), 0);
 
     // Create a seed from the password using a hash function
     std::hash<std::string> hasher;
-    size_t seed = hasher(password);
+    size_t seed = hasher(password) + shift;
 
     // Initialize mt19937 with the seed (use lower 32 bits)
     std::mt19937 rng(static_cast<uint32_t>(seed));
@@ -63,7 +158,7 @@ std::vector<uint8_t> encode(const std::vector<uint8_t>& raw_data, const std::str
     }
 
     // Step 2: Generate permutation O based on password using mt19937
-    std::vector<uint16_t> O = generate_permutation(password);
+    std::vector<uint16_t> O = generate_permutation(password, 0, 351);
 
     // Step 3: Encode the length L as 10-bit unsigned integer
     uint16_t L = static_cast<uint16_t>(raw_data.size());
@@ -76,6 +171,7 @@ std::vector<uint8_t> encode(const std::vector<uint8_t>& raw_data, const std::str
 
     // Step 4: Convert raw_data to bit array D
     std::vector<uint8_t> D = bytes_to_bits(raw_data);
+    std::unordered_set<uint32_t> Oindex;
 
     // Step 5: Compose raw_bit_message as L + L + L
     std::vector<uint8_t> raw_bit_message;
@@ -95,22 +191,63 @@ std::vector<uint8_t> encode(const std::vector<uint8_t>& raw_data, const std::str
             size_t pos = i * 9 + k;
             if (pos >= 65536) break; // Prevent out-of-bounds
             uint16_t index = O[pos];
+            Oindex.insert(index);
             P[index] = bit;
         }
     }
 
     // calculate repeat times
-    size_t repeat = (65536 - 270) / (L * 8);
-    for (size_t i = 0; i < D.size(); ++i) {
-        for (int k = 0; k < repeat; ++k) {
-            size_t pos = 270 + i * repeat + k;
-            if (pos >= 65536) break; // Prevent out-of-bounds
-            uint16_t index = O[pos];
-            P[index] = D[i];
+    size_t repeat = (65536 - 351) / (L * 8); // 27*13 = 351
+    double max_score = 0;
+    std::vector<uint8_t> best_P;
+
+    for(uint8_t shift_idx = 0; shift_idx<8; shift_idx++){
+        std::vector<uint8_t> PRep(P);
+        std::bitset<3> shift(shift_idx);
+        std::vector<uint8_t> shift_bit_array;
+        shift_bit_array.reserve(3);
+        for (int j = 2; j >= 0; --j) {
+            shift_bit_array.push_back(shift[j]);
+        }
+        std::vector<uint8_t> shift_bit_msg;
+        shift_bit_msg.reserve(9);
+        shift_bit_msg.insert(shift_bit_msg.end(), shift_bit_array.begin(), shift_bit_array.end());
+        shift_bit_msg.insert(shift_bit_msg.end(), shift_bit_array.begin(), shift_bit_array.end());
+        shift_bit_msg.insert(shift_bit_msg.end(), shift_bit_array.begin(), shift_bit_array.end());
+        for (size_t i = 0; i < shift_bit_msg.size(); ++i) {
+            uint8_t bit = shift_bit_msg[i];
+            for (int k = 0; k < 9; ++k) {
+                size_t pos = i * 9 + k + 270;
+                if (pos >= 65536) break; // Prevent out-of-bounds
+                uint16_t index = O[pos];
+                Oindex.insert(index);
+                PRep[index] = bit;
+            }
+        }
+        uint32_t current_end_loc = 65535;
+        std::vector<uint16_t> O1 = generate_permutation(password, shift_idx + 1, 351);
+        for (size_t i = 0; i < D.size(); ++i) {
+            for (int k = 0; k < repeat; ++k) {
+                size_t pos = i * repeat + k;
+                if (pos >= 65536) break; // Prevent out-of-bounds
+                uint32_t index = O1[pos];
+                if(Oindex.find(index) != Oindex.end()){
+                    index = current_end_loc;
+                    current_end_loc -= 1;
+                }
+                PRep[index] = D[i];
+            }
+        }
+
+        std::vector<float> floatVec(65536);
+        std::transform(PRep.begin(), PRep.end(), floatVec.begin(), [](uint8_t x) { return (float)x;});
+        double p_score = calculate_score(floatVec, 256, 256);
+        if(p_score > max_score){
+            max_score = p_score;
+            best_P = std::move(PRep);
         }
     }
-
-    return P;
+    return best_P;
 }
 
 // Decode function
@@ -122,12 +259,14 @@ std::vector<uint8_t> decode(const std::vector<float>& coded_data, const std::str
     }
 
     // Step 2: Generate permutation O based on password using mt19937
-    std::vector<uint16_t> O = generate_permutation(password);
+    std::vector<uint16_t> O = generate_permutation(password, 0, 351);
 
     size_t current_pos = 0;
+    std::unordered_set<uint32_t> Oindex;
+    uint32_t current_end_loc = 65535;
 
     // Step 3: Define decode_bit as a lambda function
-    auto decode_bit = [&](std::vector<uint8_t>& bits_out, size_t repeat) -> uint8_t {
+    auto decode_bit = [&](std::vector<uint8_t>& bits_out, size_t repeat, bool set_oindex=false) -> uint8_t {
         std::vector<uint8_t> bit_1_01;
         std::vector<float> fc_prob_1_01;
         bit_1_01.reserve(repeat);
@@ -136,7 +275,15 @@ std::vector<uint8_t> decode(const std::vector<float>& coded_data, const std::str
         // Read 9 bits
         for (int i = 0; i < repeat; ++i) {
             if (current_pos >= 65536) break; // Prevent out-of-bounds
-            float prob = coded_data[O[current_pos++]];
+
+            uint32_t index = O[current_pos++];
+
+            if(Oindex.find(index) != Oindex.end()){
+                index = current_end_loc;
+                current_end_loc -= 1;
+            } else if(set_oindex) Oindex.insert(index);
+
+            float prob = coded_data[index];
             uint8_t bit = (prob > 0.0f) ? 1 : 0;
             bit_1_01.push_back(bit);
             fc_prob_1_01.push_back(prob);
@@ -222,7 +369,7 @@ std::vector<uint8_t> decode(const std::vector<float>& coded_data, const std::str
         std::vector<uint8_t> int_bits;
         int_bits.reserve(10);
         for (int p = 0; p < 10; ++p) {
-            uint8_t bit = decode_bit(int_bits, 9);
+            uint8_t bit = decode_bit(int_bits, 9, true);
             int_bits.push_back(bit);
         }
         uint16_t uint_len = make_unsigned_int_10bit(int_bits);
@@ -248,15 +395,54 @@ std::vector<uint8_t> decode(const std::vector<float>& coded_data, const std::str
         return std::vector<uint8_t>(); // Decode failed
     }
 
+    // std::cout <<" decoded len " << dlen << std::endl;
+
+    // Step 4/5 rep, decode shift
+    std::vector<uint16_t> decoded_shift;
+    for (int i = 0; i < 3; ++i) {
+        std::vector<uint8_t> int_bits;
+        int_bits.reserve(3);
+        for (int p = 0; p < 3; ++p) {
+            uint8_t bit = decode_bit(int_bits, 9, true);
+            int_bits.push_back(bit);
+        }
+        uint16_t uint_shift = make_unsigned_int_10bit(int_bits);
+        decoded_shift.push_back(uint_shift);
+    }
+    // std::cout << "shift decode: " << O[current_pos] << std::endl;
+
+    // Step 5: Determine the most common L
+    std::unordered_map<uint16_t, int> decoded_shift_count;
+    for (auto len : decoded_shift) {
+        decoded_shift_count[len]++;
+    }
+
+    uint16_t dshift = 0;
+    int max_shift_count = 0;
+    for (const auto& pair : decoded_shift_count) {
+        if (pair.second > max_shift_count) {
+            max_shift_count = pair.second;
+            dshift = pair.first;
+        }
+    }
+
+    if (max_shift_count < 2) { // No common value
+        return std::vector<uint8_t>(); // Decode failed
+    }
+    // std::cout << "sft " << dshift << std::endl;
+
+    O = generate_permutation(password, dshift + 1, 351); // replace O
+    current_pos = 0; // Reset position
+
     // Step 6: Decode the message based on dlen
     std::vector<uint8_t> msg;
     msg.reserve(dlen);
-    size_t repeat = (65536 - 270) / (dlen * 8);
+    size_t repeat = (65536 - 351) / (dlen * 8);
     for (size_t i = 0; i < dlen; ++i) {
         std::vector<uint8_t> byte_bits;
         byte_bits.reserve(8);
         for (int j = 0; j < 8; ++j) {
-            uint8_t bit = decode_bit(byte_bits, repeat);
+            uint8_t bit = decode_bit(byte_bits, repeat, false);
             byte_bits.push_back(bit);
         }
         // Convert bits to byte
