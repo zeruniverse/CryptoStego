@@ -29,48 +29,62 @@
       <div class="inner clearfix">
         <section id="main-content">
           <h3>
-<a id="how-to-use" class="anchor" href="#how-to-use" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Introduction</h3>
+            <a id="how-to-use" class="anchor" href="#how-to-use" aria-hidden="true">
+              <span aria-hidden="true" class="octicon octicon-link"></span>
+            </a>Introduction</h3>
 
-<p>This JS library provides functions to load image from file input into canvas, write message to image in canvas and read message from image in canvas.</p>
-<p>Below is a simple example showing how the library works!</p>
+          <p>This JS library provides functions to load an image from a file input into a canvas, write a message to the image in the canvas, and read a message from the image in the canvas.</p>
+          <p>Below is a simple example showing how the library works!</p>
 
-<h3>
-<a id="example" class="anchor" href="#example" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Example</h3>
+          <h3>
+            <a id="example" class="anchor" href="#example" aria-hidden="true">
+              <span aria-hidden="true" class="octicon octicon-link"></span>
+            </a>Example</h3>
 
-<h4 style="color:blue">Step1. Select an image from your computer (Don't use image smaller than 64*64)</h4>
-<p><input type="file" id="file" accept="image/*" /></p>
-<h4 style="color:blue">Step2. Choose a robustness level below</h4>
-<div><p>
-  <p><label for="m0"><input type="radio" name="mode" id="m0" value=0 checked="checked" /> Level 0 - Best Secrecy, No Robustness to Compression</label></p>
-  <p><label for="m1"><input type="radio" name="mode" id="m1" value=1 /> Level 1</label></p>
-  <p><label for="m2"><input type="radio" name="mode" id="m2" value=2 /> Level 2</label></p>
-  <p><label for="m3"><input type="radio" name="mode" id="m3" value=3 /> Level 3</label></p>
-  <p><label for="m4"><input type="radio" name="mode" id="m4" value=4 /> Level 4</label></p>
-  <p><label for="m5"><input type="radio" name="mode" id="m5" value=5 /> Level 5 - Best Robustness to Compression, Worst Secrecy</label></p>
-  <p> </p>
-  <p style="color:red">If you're going to retrieve message, your level selected here must be the same level you use to generate the image!</p>
-</p></div>
-<h4 style="color:blue">Step3. Optionally set/input a password for retrieving message</h4>
-<p>Password: <input type="text" id="pass" value="" placeholder="No Password"/></p>
-<h4 style="color:blue">Results</h4>
-<p>
-<div id="result" style="background-color: rgba(0,255,0,0.3); padding: 10px 10px 10px 10px;">Please finish step 1~3 above and click a button below. Your result will then show up here!</div>
-</p>
-<p>
-<img id="resultimg" style="display:none" src="" />
-</p>
-<h4 style="color:blue">What do you want to do?</h4>
-<p>
-<textarea id="msg" style="width:100%;height:50px;">This Awesome Message Will be Written into the Image!</textarea>
-</p>
-<a href="javascript: writeIMG()" class="button">Write message into image</a>
-<p> </p>
-<p>OR:</p>
-<a href="javascript: readIMG()" class="button" style="background-image: url(images/main-bar1.png);"><span style="color:black">Read message from image</span></a>
-<h3>
-<a id="support-or-contact" class="anchor" href="#support-or-contact" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Support</h3>
+            <!-- Step 0: Model Selector -->
+          <h4 style="color:blue">Step 0. Select which model to use</h4>
 
-<p>Having trouble with this library or demo? <a href="https://github.com/zeruniverse/CryptoStego/issues/new">Submit an issue</a> and we’ll help you sort it out.</p>
+          <p>
+            <label>
+              <input type="radio" name="modelType" value="0" checked>
+              Use model optimized for visual similarity
+            </label>
+          </p>
+          <p>
+            <label>
+              <input type="radio" name="modelType" value="1">
+              Use model optimized for robustness
+            </label>
+          </p>
+
+          <h4 style="color:blue">Step 1. Select an image from your computer (Don't use images smaller than 512 x 512)</h4>
+          <p><input type="file" id="file" accept="image/*" /></p>
+
+          <h4 style="color:blue">Step 2. Optionally set/input a password for retrieving the message</h4>
+          <p>Password: <input type="text" id="pass" value="" placeholder="No Password"/></p>
+
+          <h4 style="color:blue">Results</h4>
+          <p>
+            <div id="result" style="background-color: rgba(0,255,0,0.3); padding: 10px;">Please complete Steps 0, 1, and 2 above and click a button below. Your result will then show up here!</div>
+          </p>
+          <p>
+            <img id="resultimg" style="display:none; max-width: 100%; height: auto;" src="" />
+          </p>
+
+          <h4 style="color:blue">What do you want to do?</h4>
+          <p>
+            <textarea id="msg" style="width:100%;height:50px;">This Awesome Message Will be Written into the Image!</textarea>
+          </p>
+          <a href="javascript: showLoading()" id="encodeButton" class="button">Write Message into Image</a>
+          <p>OR:</p>
+          <a href="javascript: showLoading()" id="decodeButton" class="button" style="background-image: url(images/main-bar1.png);"><span style="color:black">Read Message from Image</span></a>
+
+          <h3>
+            <a id="support-or-contact" class="anchor" href="#support-or-contact" aria-hidden="true">
+              <span aria-hidden="true" class="octicon octicon-link"></span>
+            </a>Support</h3>
+
+          <p>Having trouble with this library or demo? <a href="https://github.com/zeruniverse/CryptoStego/issues/new">Submit an issue</a> and we’ll help you sort it out.</p>
         </section>
 
         <aside id="sidebar">
@@ -90,53 +104,115 @@
       </div>
     </div>
 
-<script type="text/javascript" src="javascripts/jquery.min.js"></script> <!--jQuery is not required by the library. We use it in DEMO page-->
-<script type="text/javascript" src="javascripts/cryptostego.min.js"></script>
-<script type="text/javascript">
-function writeIMG(){
-    $("#resultimg").hide();
-    $("#resultimg").attr('src','');
-    $("#result").html('Processing...');
-    function writefunc(){
-        var selectedVal = '';
-        var selected = $("input[type='radio'][name='mode']:checked");
-        if (selected.length > 0) {
-            selectedVal = selected.val();
-        }
-        var t = writeMsgToCanvas('canvas',$("#msg").val(),$("#pass").val(),selectedVal);
-        if(t===true){
-            var myCanvas = document.getElementById("canvas");
-            var image = myCanvas.toDataURL("image/png");
-            $("#resultimg").attr('src',image);
-            $("#result").html('Success! Save the result image below and send it to others!');
-            $("#resultimg").show();
-        } else $("#result").html(t);
-    }
-    loadIMGtoCanvas('file','canvas',writefunc,500);
-}
-function readIMG(){
-    $("#resultimg").hide();
-    $("#result").html('Processing...');
-    function readfunc(){
-        var selectedVal = '';
-        var selected = $("input[type='radio'][name='mode']:checked");
-        if (selected.length > 0) {
-            selectedVal = selected.val();
-        }
-        var t= readMsgFromCanvas('canvas',$("#pass").val(),selectedVal);
-        if(t!=null){
-            t=t.split('&').join('&amp;');
-            t=t.split(' ').join('&nbsp;');
-            t=t.split('<').join('&lt;');
-            t=t.split('>').join('&gt;');
-            t=t.replace(/(?:\r\n|\r|\n)/g, '<br />');
-            $("#result").html(t);
-        }else $("#result").html('ERROR REAVEALING MESSAGE!');
+    <!-- Hidden canvas element for processing -->
+    <canvas id="canvas" style="display:none;"></canvas>
 
-    }
-    loadIMGtoCanvas('file','canvas',readfunc);
-}
-</script>
+    <!-- Include jQuery (still used by the demo page) -->
+    <script type="text/javascript" src="jquery.min.js"></script>
 
+    <!-- Include stego.js as an ES6 module -->
+    <script type="module">
+      import { initCodecs, isCodecsReady, loadIMGtoCanvas, writeMsgToCanvas, readMsgFromCanvas } from './stego.js';
+
+      // Initialize Codec Sessions
+      initCodecs().then(() => {
+          // Enable buttons after successful initialization
+          document.getElementById('encodeButton').href = "javascript: writeIMG()";
+          document.getElementById('decodeButton').href = "javascript: readIMG()";
+          console.log('Codec sessions initialized successfully.');
+      }).catch((error) => {
+          // Display error message
+          document.getElementById('result').innerHTML = `Error initializing codecs: ${error.message}`;
+          console.error('Codec initialization error:', error);
+      });
+
+      /**
+       * Function to get the selected model type.
+       * Returns 0 for visual similarity and 1 for robustness.
+       */
+      function getModelType() {
+          const selected = document.querySelector('input[name="modelType"]:checked');
+          return selected ? parseInt(selected.value, 10) : 0;
+      }
+
+      /**
+       * Function to handle writing a message into an image.
+       */
+      window.writeIMG = async function() {
+          $("#resultimg").hide();
+          $("#resultimg").attr('src','');
+          $("#result").html('Processing...');
+
+          try {
+              // Get user inputs
+              const password = $("#pass").val() || '';
+              const message = $("#msg").val();
+              const modelType = getModelType(); // Get the selected model type
+
+              // Load the selected image into the canvas
+              await loadIMGtoCanvas('file', 'canvas', 1920);
+
+              // Write the message into the canvas image with the selected model type
+              const isOK = await writeMsgToCanvas('canvas', message, password, modelType);
+
+              // Retrieve the encoded image from the canvas
+              const myCanvas = document.getElementById("canvas");
+              const image = myCanvas.toDataURL("image/png");
+
+              // Display the encoded image
+              $("#resultimg").attr('src', image);
+              if(isOK){
+                $("#result").html('Success! Save the result image below and share it with others.');
+              } else {
+                $("#result").html('The encoded image is generated. But it cannot be decoded.<br />Try to use a different image (better to be larger than 512*512)');
+              }
+
+              $("#resultimg").show();
+          } catch (error) {
+              // Display error message
+              $("#result").html(`Error: ${error.message}`);
+              console.error('Write Message Error:', error);
+          }
+      }
+
+      /**
+       * Function to handle reading a message from an image.
+       */
+      window.readIMG = async function() {
+          $("#resultimg").hide();
+          $("#result").html('Processing...');
+
+          try {
+              // Get user inputs
+              const password = $("#pass").val() || '';
+              const modelType = getModelType(); // Get the selected model type
+
+              // Load the selected image into the canvas
+              await loadIMGtoCanvas('file', 'canvas', 1920);
+
+              // Read the message from the canvas image with the selected model type
+              const message = await readMsgFromCanvas('canvas', password, modelType);
+
+              // Format the message for display
+              const formattedMessage = message
+                  .replace(/&/g, '&amp;')
+                  .replace(/ /g, '&nbsp;')
+                  .replace(/</g, '&lt;')
+                  .replace(/>/g, '&gt;')
+                  .replace(/(?:\r\n|\r|\n)/g, '<br />');
+
+              // Display the decoded message
+              $("#result").html(formattedMessage);
+          } catch (error) {
+              // Display error message
+              $("#result").html('ERROR REVEALING MESSAGE!');
+              console.error('Read Message Error:', error);
+          }
+      }
+
+      window.showLoading = function() {
+        $("#result").html("DEMO is initializing, please wait...<br />If this lasts for a long time, open console to check errors.");
+      }
+    </script>
   </body>
 </html>
