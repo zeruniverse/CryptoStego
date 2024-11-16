@@ -11,7 +11,9 @@ v3.0
 **Note: Library needs HTML5 support!**
 
 ### Test image
-![image](https://github.com/user-attachments/assets/f11abf40-9163-49c1-8d0e-ece5c9d4e5ae)
+![image](https://user-images.githubusercontent.com/4648756/87104009-84671b80-c20b-11ea-995b-72bc47d43766.png)
+
+PNG - 635 KB
 
 ### Test data
 ```
@@ -24,20 +26,43 @@ BONJOUR LE MONDE!
 ПРИВЕТ МИР!
 ```
 
+### Use model optimized for visual similarity
+
+![image](https://github.com/user-attachments/assets/d76de191-6580-438f-b6aa-658776d35368)
+
+JPG compressed to 120 KB (18.9%). This is the maximum compression that test data can be decoded correctly for this model.
+
+### Use model optimized for robustness
+
+![image](https://github.com/user-attachments/assets/2847eeb1-dec8-4a84-bb3d-716ab8ed3c79)
+
+JPG compressed to 28 KB (4.4%). This is the maximum compression that test data can be decoded correctly for this model.
+
+
+You can try to decode data yourself in the demo webpage. Use empty password.
+
 ## How to use
+
 Download [cryptostego.zip](https://github.com/zeruniverse/CryptoStego/releases/latest/download/cryptostego.zip)
+
+Replace models in `dependencies/models` with the model version you want (different models can be downloaded from GitHub release). Please note, encoder and decoder must be used in pairs.
+
 **Note: This JS library needs HTML5 support!**
 
 put `stego.js` at same level of your `index.html` (together with `dependencies` folder) and import it in your HTML. If your file structure is different, you might need to modify `stego.js`
 
 ```html
-<script type="module" src="stego.js"></script>
+<script type="module">
+    import { initCodecs, isCodecsReady, loadIMGtoCanvas, writeMsgToCanvas, readMsgFromCanvas } from './stego.js';
+
+    ...
+</script>
 ```
 
 ## Features
-+ new in 3.0: robust to image resize (upsampling, downsampling), translation, jittering, rotation etc.
++ new in 3.0: robust to image resize (upsampling, downsampling), color jittering, photo editing etc.
 + robust to compression (JPEG, PNG, GIF).
-+ new in 3.0: encoded image is visually equivalent to original image.
++ new in 3.0: encoded image is more visually equivalent to original image.
 
 
 ## Usage
@@ -68,9 +93,9 @@ Read message from canvas `canvasid`. `password` is a string. If `password` is no
 
 ## Minimum Coding Example
 
-Refer to `example/` folder.
+Refer to `example/` folder. Or for demo page, refer to the `gh-pages` branch.
 
 ## Copyright
 Jeffery Zhao
 
-License: GNU **A**GPL v3.0 or later
+License: GNU **A**GPL v3.0 or later for both code and model. For commercial use requiring another license, contact me.
