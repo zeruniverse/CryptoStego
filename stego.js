@@ -2,24 +2,28 @@
 
 import * as ort from './dependencies/onnxruntime-web-1.20.0/ort.webgpu.min.mjs';
 
-let encoderSessionv = null;
-let decoderSessionv = null;
-let encoderSessionr = null;
-let decoderSessionr = null;
+let modelBytesEncoderV = null;
+let modelBytesDecoderV = null;
+let modelBytesEncoderR = null;
+let modelBytesDecoderR = null;
 let wasmModule = null;
+
+// Define session options globally
+const sessionOptions = { executionProviders: ['webgpu', 'wasm'] };
 
 // Initialize Codecs
 export async function initCodecs() {
-    // Initialize ONNX Runtime with WebGPU provider if available
-    const sessionOptions = { executionProviders: ['webgpu', 'wasm'] };
-
-    // Load models
     try {
+        // Load the WASM module
         wasmModule = await createWasmModule();
-        encoderSessionv = await ort.InferenceSession.create('./dependencies/models/visualencoder.onnx', sessionOptions);
-        decoderSessionv = await ort.InferenceSession.create('./dependencies/models/visualdecoder.onnx', sessionOptions);
-        encoderSessionr = await ort.InferenceSession.create('./dependencies/models/robustencoder.onnx', sessionOptions);
-        decoderSessionr = await ort.InferenceSession.create('./dependencies/models/robustdecoder.onnx', sessionOptions);
+
+        // Load all model bytes concurrently
+        [modelBytesEncoderV, modelBytesDecoderV, modelBytesEncoderR, modelBytesDecoderR] = await Promise.all([
+            loadModelBytes('./dependencies/models/visualencoder.onnx'),
+            loadModelBytes('./dependencies/models/visualdecoder.onnx'),
+            loadModelBytes('./dependencies/models/robustencoder.onnx'),
+            loadModelBytes('./dependencies/models/robustdecoder.onnx')
+        ]);
     } catch (e) {
         throw new Error('Error loading models or WASM module: ' + e.message);
     }
@@ -27,16 +31,52 @@ export async function initCodecs() {
 
 // Check if codecs are ready
 export function isCodecsReady() {
-    return encoderSessionr !== null && decoderSessionr !== null && wasmModule !== null;
+    return modelBytesEncoderV !== null &&
+           modelBytesDecoderV !== null &&
+           modelBytesEncoderR !== null &&
+           modelBytesDecoderR !== null &&
+           wasmModule !== null;
 }
 
 // Load the Emscripten WASM module
 async function createWasmModule() {
-    const Module = await import('./dependencies/codecs.js');
-    const instance = await Module.default();
-    return instance;
+    try {
+        const Module = await import('./dependencies/codecs.js');
+        const instance = await Module.default();
+        return instance;
+    } catch (e) {
+        throw new Error('Failed to load WASM module: ' + e.message);
+    }
 }
 
+// Helper function to load model bytes
+async function loadModelBytes(url) {
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`Failed to load model from ${url}: ${response.status} ${response.statusText}`);
+        }
+        return await response.arrayBuffer();
+    } catch (e) {
+        throw new Error(`Error fetching model from ${url}: ${e.message}`);
+    }
+}
+
+// Helper function to run model inference
+async function runModel(modelBytes, feeds) {
+    let session = null;
+    try {
+        session = await ort.InferenceSession.create(modelBytes, sessionOptions);
+        const results = await session.run(feeds);
+        return results;
+    } catch (e) {
+        throw new Error('Model inference failed: ' + e.message);
+    } finally {
+        if (session) {
+            session.release();
+        }
+    }
+}
 
 // Load image to canvas
 export async function loadIMGtoCanvas(inputid, canvasid, maxsize = 0) {
@@ -63,10 +103,10 @@ export async function loadIMGtoCanvas(inputid, canvasid, maxsize = 0) {
 
             if (maxsize > 0 && (width > maxsize || height > maxsize)) {
                 if (width > height) {
-                    height = height * maxsize / width;
+                    height = Math.round(height * maxsize / width);
                     width = maxsize;
                 } else {
-                    width = width * maxsize / height;
+                    width = Math.round(width * maxsize / height);
                     height = maxsize;
                 }
             }
@@ -90,6 +130,10 @@ export async function loadIMGtoCanvas(inputid, canvasid, maxsize = 0) {
 // Write message to canvas
 export async function writeMsgToCanvas(canvasid, msg, password = '', model_type = 0, check_valid = true) {
     try {
+        if (!isCodecsReady()) {
+            throw new Error('Codecs are not ready. Please initialize codecs first.');
+        }
+
         const canvas = document.getElementById(canvasid);
         if (!canvas) {
             throw new Error('Canvas not found');
@@ -104,7 +148,7 @@ export async function writeMsgToCanvas(canvasid, msg, password = '', model_type 
 
         // Encode message to bytes
         const encoder = new TextEncoder();
-        if(msg.length < 1) throw new Error('No message to encode');
+        if (msg.length < 1) throw new Error('No message to encode');
         let messageBytes = encoder.encode(msg);
 
         // You may add zlib compression here.
@@ -122,8 +166,18 @@ export async function writeMsgToCanvas(canvasid, msg, password = '', model_type 
             'data': new ort.Tensor('uint8', data_bits, [65536]),
         };
 
+        // Select the appropriate model bytes based on model_type
+        let modelBytes;
+        if (model_type === 0) {
+            modelBytes = modelBytesEncoderV;
+        } else if (model_type === 1) {
+            modelBytes = modelBytesEncoderR;
+        } else {
+            throw new Error('Invalid model_type. Must be 0 (visual) or 1 (robust).');
+        }
+
         // Run encoder model
-        const results = await ((model_type==0)?encoderSessionv.run(feeds):encoderSessionr.run(feeds));
+        const results = await runModel(modelBytes, feeds);
         const encodedImg = results['encoded_img'].data;
 
         // Draw encoded image back to canvas
@@ -133,7 +187,7 @@ export async function writeMsgToCanvas(canvasid, msg, password = '', model_type 
 
         if (check_valid) {
             // Read the message back to verify
-            try{
+            try {
                 const decodedMsg = await readMsgFromCanvas(canvasid, password, model_type);
                 if (decodedMsg !== msg) {
                     return false;
@@ -149,8 +203,12 @@ export async function writeMsgToCanvas(canvasid, msg, password = '', model_type 
 }
 
 // Read message from canvas
-export async function readMsgFromCanvas(canvasid, password = '', model_type=0) {
+export async function readMsgFromCanvas(canvasid, password = '', model_type = 0) {
     try {
+        if (!isCodecsReady()) {
+            throw new Error('Codecs are not ready. Please initialize codecs first.');
+        }
+
         const canvas = document.getElementById(canvasid);
         if (!canvas) {
             throw new Error('Canvas not found');
@@ -169,9 +227,19 @@ export async function readMsgFromCanvas(canvasid, password = '', model_type=0) {
             'img_h': new ort.Tensor('int64', BigInt64Array.from([BigInt(height)]), [1]),
         };
 
+        // Select the appropriate model bytes based on model_type
+        let modelBytes;
+        if (model_type === 0) {
+            modelBytes = modelBytesDecoderV;
+        } else if (model_type === 1) {
+            modelBytes = modelBytesDecoderR;
+        } else {
+            throw new Error('Invalid model_type. Must be 0 (visual) or 1 (robust).');
+        }
+
         // Run decoder model
-        const results = await ((model_type==0)?decoderSessionv.run(feeds):decoderSessionr.run(feeds));
-        const dataOutput = results['data'].data; // Float32Array of length 65536
+        const results = await runModel(modelBytes, feeds);
+        const dataOutput = results['data'].data; // Assuming 'data' is the output tensor name
 
         // Use the WASM module to decode dataOutput to bytes
         const decodedBytes = wasmModule.decodeToBytes(dataOutput, password);
